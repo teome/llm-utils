@@ -51,9 +51,9 @@ class MessageTD(TypedDict, total=False):
 Message = MessageTD
 
 # Conversation class to wrap up a list of messages for interaction
-class Conversation(list):
+class Conversation:
     def __init__(self, messages=None, color_scheme=None):
-        super().__init__(messages or [])
+        self.messages = messages or []
         self.color_scheme = color_scheme or {
             "system": "red",
             "user": "green",
@@ -63,11 +63,11 @@ class Conversation(list):
 
     def add_message(self, role: Role, content: str):
         """Add a message to the conversation."""
-        self.append(Message(role=role, content=content))
+        self.messages.append(Message(role=role, content=content))
 
     def display_conversation(self, detailed=False):
         """Display the conversation."""
-        for message in self:
+        for message in self.messages:
             terminal_color = terminal_colors[self.color_scheme.get(message["role"], "white")]
             if detailed:
                 non_role_strs = ' |'.join([f"{k}: {v}" for k, v in message.items() if k != 'role'])
@@ -78,18 +78,18 @@ class Conversation(list):
     def delete_interaction(self, index=-1):
         """Delete an interaction from the conversation."""
         if index == -1:
-            index = len(self) - 2
+            index = len(self.messages) - 2
 
-        if index < 0 or index >= len(self) or self[index]["role"] != 'user':
+        if index < 0 or index >= len(self.messages) or self.messages[index]["role"] != 'user':
             raise RuntimeError("Invalid index for deletion. Index does not correspond to a user message.")
 
-        if index + 1 >= len(self) or self[index + 1]["role"] != 'assistant':
+        if index + 1 >= len(self.messages) or self.messages[index + 1]["role"] != 'assistant':
             raise RuntimeError("Invalid interaction. No assistant message following the user message.")
 
-        del self[index:index + 2]
+        del self.messages[index:index + 2]
 
     def json(self):
-        return json.dumps(self)
+        return json.dumps(self.messages)
 
 
 if __name__ == "__main__":
@@ -109,7 +109,7 @@ if __name__ == "__main__":
     conversation.display_conversation()
     conversation.display_conversation(detailed=True)
     print(conversation.json())
-    print(conversation)
+    print(conversation.messages)
 
     conversation.delete_interaction()
     conversation.display_conversation()
@@ -118,6 +118,8 @@ if __name__ == "__main__":
     conversation.delete_interaction()
     conversation.display_conversation()
 
-    conversation.append({"role": "user", "content": "Who won the FA Cup in 2022?"})
-    conversation.append({"role": "assistant", "content": "Liverpool won the FA Cup in 2022."})
+    conversation.messages.append({"role": "user", "content": "Who won the FA Cup in 2022?"})
+    conversation.messages.append({"role": "assistant", "content": "Liverpool won the FA Cup in 2022."})
     conversation.display_conversation(detailed=True)
+
+    
