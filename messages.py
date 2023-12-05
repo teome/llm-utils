@@ -41,16 +41,16 @@ class MessagePydantic(BaseModel):
     role: str
     content: str
 
-# Use TypedDict as the openai python lib does and keep it simple
-Role = Literal["system", "user", "assistant", "function"]
 
 class MessageTD(TypedDict, total=False):
-    role: Required[Role]
+    role: Required[str]
     content: Required[str]
 
 Message = MessageTD
 
 # Conversation class to wrap up a list of messages for interaction
+# TODO: modify to incorporate the approach taken here: 
+# https://github.com/lm-sys/FastChat/blob/main/fastchat/conversation.py#L36
 class Conversation:
     def __init__(self, messages=None, color_scheme=None):
         self.messages = messages or []
@@ -60,8 +60,9 @@ class Conversation:
             "assistant": "blue",
             "function": "cyan",
         }
+        self.roles = ("user", "assistant",)
 
-    def add_message(self, role: Role, content: str):
+    def add_message(self, role: str, content: str):
         """Add a message to the conversation."""
         self.messages.append(Message(role=role, content=content))
 
@@ -90,6 +91,9 @@ class Conversation:
 
     def json(self):
         return json.dumps(self.messages)
+    
+    def get_prompt(self):
+        raise NotImplementedError
 
 
 if __name__ == "__main__":
