@@ -46,7 +46,26 @@ def call_chat_completions(
     backoff=2,
     **kwargs
 ):
-    """Call the chat completions API and return the generated completions."""
+    """
+    Call the chat completions API and return the generated completions.
+
+    Args:
+        messages (list): List of message objects representing the conversation.
+        model (str, optional): The model to use for chat completions. Defaults to "gpt-3.5-turbo".
+        client (object, optional): An instance of the OpenAI class. Defaults to None.
+        max_tokens (int, optional): The maximum number of tokens in the generated completions. Defaults to 50.
+        temperature (float, optional): Controls the randomness of the generated completions. Defaults to 0.8.
+        return_response (bool, optional): Whether to return the full API response. Defaults to False.
+        timeout (int, optional): The maximum time in seconds to wait for the API response. Defaults to None.
+        max_retries (int, optional): The maximum number of retries in case of API failures. Defaults to 3.
+        delay (int, optional): The delay in seconds between retries. Defaults to 1.
+        backoff (int, optional): The backoff factor for exponential backoff between retries. Defaults to 2.
+        **kwargs: Additional keyword arguments to pass to the API.
+
+    Returns:
+        str or tuple: The generated completions. If `return_response` is True, returns a tuple containing the completions and the API response.
+
+    """
     if client is None:
         # Create an instance of the OpenAI class, assumes OPENAI_API_KEY is set
         client = OpenAI()
