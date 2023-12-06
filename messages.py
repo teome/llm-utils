@@ -49,7 +49,7 @@ class MessageTD(TypedDict, total=False):
 Message = MessageTD
 
 # Conversation class to wrap up a list of messages for interaction
-# TODO: modify to incorporate the approach taken here: 
+# TODO: modify to incorporate the approach taken here:
 # https://github.com/lm-sys/FastChat/blob/main/fastchat/conversation.py#L36
 class Conversation:
     def __init__(self, messages=None, color_scheme=None):
@@ -90,9 +90,14 @@ class Conversation:
         del self.messages[index:index + 2]
 
     def json(self):
+        """Return conversation messages as json string."""
         return json.dumps(self.messages)
-    
+
     def get_prompt(self):
+        """Get the prompt for the conversation."""
+
+        # TODO: implement to take current messages and format according to prompt spec
+        # Class should have a default prompt spec that can be overridden
         raise NotImplementedError
 
 
@@ -126,4 +131,3 @@ if __name__ == "__main__":
     conversation.messages.append({"role": "assistant", "content": "Liverpool won the FA Cup in 2022."})
     conversation.display_conversation(detailed=True)
 
-    
