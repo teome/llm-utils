@@ -1,0 +1,160 @@
+"""
+Conversation prompt templates.
+
+Heavily inspired and partly copied from fastchat/vLLM approach
+https://github.com/lm-sys/FastChat/blob/main/fastchat/conversation.py
+
+TODO consider just using the library if more of its functionality is needed
+
+Mistral-Instruct format
+<s>[INST] Instruction [/INST] Model answer</s>[INST] Follow-up instruction [/INST]
+As reference, here is the format used to tokenize instructions during fine-tuning:
+ [START_SYMBOL_ID] +
+ tok("[INST]") + tok(USER_MESSAGE_1) + tok("[/INST]") +
+ tok(BOT_MESSAGE_1) + [END_SYMBOL_ID] +
+ …
+ tok("[INST]") + tok(USER_MESSAGE_N) + tok("[/INST]") +
+ tok(BOT_MESSAGE_N) + [END_SYMBOL_ID]
+NOTE The function tok should never generate the EOS token, however FastChat (used in vLLM)
+sends the full prompt as a string which might lead to incorrect tokenization of the EOS token
+and prompt injection. Users are encouraged to send tokens instead as described above.
+NOTE Maybe just what everyone else does and encode the special tokens in the prompt string. HF and vLLM do this
+
+NB need to add bos and eos tokens from tokenizer, not encoded in the prompt string then tokenized
+<s>[INST] <<SYS>> <system prompt> <</SYS>> <user prompt> [/INST] <response> </s>
+TODO only add </s> as a token directly after a assistant response, not after a user prompt,
+AND use the token not a string appended (according to docs and see huggingface templating which
+also uses the token not adding a string)
+https://huggingface.co/docs/transformers/main/chat_templating#special-variables
+https://github.com/facebookresearch/llama/blob/1a240688810f8036049e8da36b073f63d2ac552c/llama/generation.py#L212
+
+{% for message in messages %}
+    {% if message['role'] == 'user' %}
+        {{ bos_token + '[INST] ' + message['content'] + ' [/INST]' }}
+    {% elif message['role'] == 'system' %}
+        {{ '<<SYS>>\\n' + message['content'] + '\\n<</SYS>>\\n\\n' }}
+    {% elif message['role'] == 'assistant' %}
+        {{ ' '  + message['content'] + ' ' + eos_token }}
+    {% endif %}
+{% endfor %}
+"""
+
+from dataclasses import dataclass, field
+from typing import List, Any, Dict, Union, Tuple
+
+@dataclass
+class Conversation:
+    """A class that manages prompt templates and keeps all conversation history."""
+
+    # The name of this template
+    name: str
+    # # The template of the system prompt
+    # system_template: str = "{system_message}"
+    # # The system message
+    # system_message: str = ""
+    # The names of two roles
+    roles: Tuple[str,...] = ("system", "user", "assistant")
+    roles_templates: Dict[str, str] = field(default_factory=dict)
+    # The role to use for adding a final empty content prompt to the end of the conversation
+    # to get the generator to begin generating. Most likely to be the assistant role
+    generator_str: str = ""
+    # All messages. Each item is {"role": role, "content": content}.
+    messages: List[Dict[str, str]] = ()
+    # The number of few shot examples
+    offset: int = 0
+    # # The separator style and configurations
+    # sep_style: SeparatorStyle = SeparatorStyle.ADD_COLON_SINGLE
+    # sep: str = "\n"
+    # sep2: str = None
+    # Stop criteria (the default one is EOS token)
+    stop_str: Union[str, List[str]] = None
+    # Stops generation if meeting any token in this list
+    stop_token_ids: List[int] = None
+
+    def get_prompt(self, add_generator_prompt=True) -> str:
+        """Get the prompt for the conversation."""
+        ret = ""
+        for message in self.messages:
+            ret += self.roles_templates[message["role"]].format(message["content"].strip())
+
+        # Add a final empty content prompt to the end of the conversation.
+        # Skip if the last message is already empty, regaredless of the role
+        if add_generator_prompt and self.messages[-1]["content"] != "":
+            ret += self.generator_str
+
+        return ret
+
+    def append_message(self, role: str, content: str):
+        self.messages.append({"role": role, "content": content})
+
+    def append_messages(self, messages: List[Dict[str, str]]):
+        self.messages.extend(messages)
+
+    def copy(self):
+        return Conversation(
+            name=self.name,
+            # system_template=self.system_template,
+            # system_message=self.system_message,
+            roles=self.roles,
+            roles_templates=self.roles_templates.copy(),
+            generator_str=self.generator_str,
+            messages=[message.copy() for message in self.messages],
+            offset=self.offset,
+            # sep_style=self.sep_style,
+            # sep=self.sep,
+            # sep2=self.sep2,
+            stop_str=self.stop_str,
+            stop_token_ids=self.stop_token_ids,
+        )
+
+# a global registry of conversation templates
+conv_templates: Dict[str, Conversation] = {}
+
+
+def register_conv_template(template: Conversation, override: bool = False):
+    """Register a new conversation template."""
+    if not override:
+        assert (
+            template.name not in conv_templates
+        ), f"{template.name} has been registered."
+
+    conv_templates[template.name] = template
+
+def get_conv_template(name: str) -> Conversation:
+    """Get a conversation template."""
+    return conv_templates[name].copy()
+
+register_conv_template(
+    Conversation(
+        name="raw",
+        roles=("system", "user", "assistant"),
+        roles_templates={
+            "system": "{system_message}\n",
+            "user": "{user_message}\n",
+            "assistant": "{assistant_message}\n",
+        },
+        generator_str="",
+        messages=[],
+        offset=0,
+        stop_str=None,
+        stop_token_ids=None,
+    )
+)
+
+register_conv_template(
+    Conversation(
+        name="llama-2",
+        roles=("user", "assistant", "system"),
+        roles_templates={
+            "system": "[INST] <<SYS>>\n{}\n<</SYS>>\n\n",
+            "user": "[INST] {} ",
+            "assistant": "[/INST] {} ",
+        },
+        generator_str="[/INST]",
+        messages=[],
+        offset=0,
+        stop_str=None,
+        stop_token_ids=None,
+    )
+)
+
