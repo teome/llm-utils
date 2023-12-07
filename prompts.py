@@ -24,7 +24,6 @@ class PromptFormat_raw(PromptFormat):
 
     def __init__(self):
         super().__init__()
-        pass
 
     def is_instruct(self):
         return False
@@ -45,7 +44,6 @@ class PromptFormat_llama(PromptFormat):
 
     def __init__(self):
         super().__init__()
-        pass
 
     def is_instruct(self):
         return True
@@ -74,7 +72,6 @@ class PromptFormat_mistrallite(PromptFormat):
 
     def __init__(self):
         super().__init__()
-        pass
 
     def is_instruct(self):
         return True
@@ -114,7 +111,6 @@ class PromptFormat_chatml(PromptFormat):
 
     def __init__(self):
         super().__init__()
-        pass
 
     def is_instruct(self):
         return True
@@ -154,7 +150,6 @@ class PromptFormat_phind_codellama(PromptFormat):
 
     def __init__(self):
         super().__init__()
-        pass
 
     def is_instruct(self):
         return True
@@ -184,7 +179,6 @@ class PromptFormat_deepseek_chat(PromptFormat):
 
     def __init__(self):
         super().__init__()
-        pass
 
     def is_instruct(self):
         return True
@@ -213,7 +207,6 @@ class PromptFormat_deepseek_instruct(PromptFormat):
 
     def __init__(self):
         super().__init__()
-        pass
 
     def is_instruct(self):
         return True
