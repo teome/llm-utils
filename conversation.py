@@ -52,12 +52,14 @@ class Conversation:
     # system_template: str = "{system_message}"
     # # The system message
     # system_message: str = ""
-    # The names of two roles
+    # The names of roles
     roles: Tuple[str,...] = ("system", "user", "assistant")
     roles_templates: Dict[str, str] = field(default_factory=dict)
     # The role to use for adding a final empty content prompt to the end of the conversation
     # to get the generator to begin generating. Most likely to be the assistant role
     generator_str: str = ""
+    # Whether to include the system prompt in the user prompt (e.g. llama-2 chat etc.)
+    system_in_user: bool = False
     # All messages. Each item is {"role": role, "content": content}.
     messages: List[Dict[str, str]] = ()
     # The number of few shot examples
@@ -74,8 +76,23 @@ class Conversation:
     def get_prompt(self, add_generator_prompt=True) -> str:
         """Get the prompt for the conversation."""
         ret = ""
-        for message in self.messages:
-            ret += self.roles_templates[message["role"]].format(message["content"].strip())
+        system_content = ""
+        for i, message in enumerate(self.messages):
+            if message["role"] == "system" and self.system_in_user:
+                if self.messages[i+1]["role"] != "user":
+                    raise ValueError(
+                        "The system prompt must be followed by a user prompt when `system_in_user=True` for prompt.")
+                system_content = self.roles_templates["system"].format(message["content"])
+                continue
+
+            content = ""
+            if system_content != "":
+                content = system_content
+                system_content = ""
+            content += message["content"]
+
+            ret += self.roles_templates[message["role"]].format(content.strip())
+
 
         # Add a final empty content prompt to the end of the conversation.
         # Skip if the last message is already empty, regaredless of the role
@@ -98,6 +115,7 @@ class Conversation:
             roles=self.roles,
             roles_templates=self.roles_templates.copy(),
             generator_str=self.generator_str,
+            system_in_user=self.system_in_user,
             messages=[message.copy() for message in self.messages],
             offset=self.offset,
             # sep_style=self.sep_style,
@@ -134,6 +152,7 @@ register_conv_template(
             "assistant": "{assistant_message}\n",
         },
         generator_str="",
+        system_in_user=False,
         messages=[],
         offset=0,
         stop_str=None,
@@ -144,13 +163,14 @@ register_conv_template(
 register_conv_template(
     Conversation(
         name="llama-2",
-        roles=("user", "assistant", "system"),
+        roles=("system", "user", "assistant"),
         roles_templates={
-            "system": "[INST] <<SYS>>\n{}\n<</SYS>>\n\n",
-            "user": "[INST] {} ",
-            "assistant": "[/INST] {} ",
+            "system": "<<SYS>>\n{}\n<</SYS>>\n\n",
+            "user": "<s>[INST] {} [/INST]",
+            "assistant": " {} </s>",
         },
-        generator_str="[/INST]",
+        generator_str=" ",
+        system_in_user=True,
         messages=[],
         offset=0,
         stop_str=None,
@@ -158,3 +178,52 @@ register_conv_template(
     )
 )
 
+register_conv_template(
+    Conversation(
+        name="mistral",
+        roles=("system", "user", "assistant"),
+        roles_templates={
+            "system": "<<SYS>>\n{}\n<</SYS>>\n\n",
+            "user": "<s>[INST] {} [/INST]",
+            "assistant": " {} </s>",
+        },
+        generator_str=" ",
+        system_in_user=True,
+        messages=[],
+        offset=0,
+        stop_str=None,
+        stop_token_ids=None,
+    )
+)
+
+
+# Standard chatml format
+# """
+# <|im_start|>system
+# You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible.
+# Knowledge cutoff: 2021-09-01
+# Current date: 2023-03-01<|im_end|>
+# <|im_start|>user
+# How are you<|im_end|>
+# <|im_start|>assistant
+# I am doing well!<|im_end|>
+# <|im_start|>user
+# How are you now?<|im_end|>
+# """
+register_conv_template(
+    Conversation(
+        name="chatml",
+        roles=("system", "user", "assistant"),
+        roles_templates={
+            "system": "<|im_start|>system\n{}<|im_end|>\n",
+            "user": "<|im_start|>user\n{}<|im_end|>\n",
+            "assistant": "<|im_start|>assistant\n{}<|im_end|>\n",
+        },
+        generator_str="<|im_start|>assistant\n",
+        system_in_user=False,
+        messages=[],
+        offset=0,
+        stop_str="<|im_end|>",
+        stop_token_ids=None, # set this for the tokenizer to use or create another template with it set
+    )
+)
