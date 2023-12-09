@@ -42,6 +42,41 @@ https://github.com/facebookresearch/llama/blob/1a240688810f8036049e8da36b073f63d
 from dataclasses import dataclass, field
 from typing import List, Any, Dict, Union, Tuple
 
+
+class _BColors:
+    """Color codes for terminal output formatting"""
+
+    RED = "\033[91m"
+    YELLOW = "\033[93m"
+    GREEN = "\033[92m"
+    BLUE = "\033[94m"
+    CYAN = "\033[96m"
+    WHITE = "\033[97m"
+    DEFAULT = "\033[39m"
+    WARNING = "\033[39m"
+    HEADER = "\033[95m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+    ENDC = "\033[0m"
+
+
+_terminal_colors = {
+    "red": _BColors.RED,
+    "yellow": _BColors.YELLOW,
+    "green": _BColors.GREEN,
+    "blue": _BColors.BLUE,
+    "cyan": _BColors.CYAN,
+    "white": _BColors.WHITE,
+    "default": _BColors.DEFAULT,
+    "warning": _BColors.WARNING,
+    "fail": _BColors.RED,
+    "header": _BColors.HEADER,
+    "bold": _BColors.BOLD,
+    "underline": _BColors.UNDERLINE,
+    "endc": _BColors.ENDC,
+}
+
+
 @dataclass
 class Conversation:
     """A class that manages prompt templates and keeps all conversation history."""
@@ -60,7 +95,8 @@ class Conversation:
     generator_str: str = ""
     # Whether to include the system prompt in the user prompt (e.g. llama-2 chat etc.)
     system_in_user: bool = False
-    # All messages. Each item is {"role": role, "content": content}.
+    # All messages. Each item is at least {"role": role, "content": content, ...}.
+    # More fields can be added for different purposes.
     messages: List[Dict[str, str]] = ()
     # The number of few shot examples
     offset: int = 0
@@ -101,8 +137,10 @@ class Conversation:
 
         return ret
 
-    def append_message(self, role: str, content: str):
-        self.messages.append({"role": role, "content": content})
+    def append_message(self, message):
+        if not isinstance(message, dict) or "role" not in message or "content" not in message:
+            raise ValueError("Message must be a dict with at least `role` and `content`.")
+        self.messages.append(message)
 
     def append_messages(self, messages: List[Dict[str, str]]):
         self.messages.extend(messages)
@@ -130,6 +168,32 @@ class Conversation:
             stop_str=self.stop_str,
             stop_token_ids=self.stop_token_ids,
         )
+
+    def format_message(self, message, detailed=True, color_scheme=None):
+        """Format the message with color based on the role."""
+        if color_scheme is None:
+            color_scheme = {}
+        terminal_color = _terminal_colors[color_scheme.get(message["role"], "white")]
+
+        if detailed:
+            non_role_strs = ' |'.join([f"{k}: {v}" for k, v in message.items() if k != 'role'])
+            return f"{terminal_color}role: {message['role']} | {non_role_strs}{_terminal_colors['endc']}"
+        return f"{terminal_color}{message['role']}: {message['content']}{_terminal_colors['endc']}"
+
+    def display_conversation(self, detailed=False, color_scheme=None):
+        """Display the conversation."""
+        if color_scheme is None:
+            color_scheme = {
+                "system": "yellow",
+                "user": "default",
+                "assistant": "blue",
+                "function": "cyan",
+            }
+
+        for message in self.messages:
+            formatted_message = self.format_message(message, detailed=detailed, color_scheme=color_scheme)
+            print(formatted_message)
+
 
 # a global registry of conversation templates
 conv_templates: Dict[str, Conversation] = {}
