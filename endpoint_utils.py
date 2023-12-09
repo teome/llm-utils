@@ -1,4 +1,4 @@
-"""Utilitu functions for interacting with the OpenAI API >=v1"""
+"""Utility functions for interacting with the OpenAI API >=v1 and other endpoints"""
 from functools import wraps
 import time
 from warnings import warn
@@ -33,10 +33,12 @@ def retry_on_failure(max_retries=3, delay=1, backoff=2, exceptions=(requests.exc
     return decorator
 
 
-def call_chat_completions(
+def call_openai_chat_completions(
     messages,
     model="gpt-3.5-turbo",
     client=None,
+    api_key=None,
+    base_url=None,
     max_tokens=50,
     temperature=0.8,
     return_response=False,
@@ -53,6 +55,8 @@ def call_chat_completions(
         messages (list): List of message objects representing the conversation.
         model (str, optional): The model to use for chat completions. Defaults to "gpt-3.5-turbo".
         client (object, optional): An instance of the OpenAI class. Defaults to None.
+        api_key (str, optional): The OpenAI API key. Defaults to None.
+        base_url (str, optional): The OpenAI API base URL. Defaults to None.
         max_tokens (int, optional): The maximum number of tokens in the generated completions. Defaults to 50.
         temperature (float, optional): Controls the randomness of the generated completions. Defaults to 0.8.
         return_response (bool, optional): Whether to return the full API response. Defaults to False.
@@ -68,7 +72,7 @@ def call_chat_completions(
     """
     if client is None:
         # Create an instance of the OpenAI class, assumes OPENAI_API_KEY is set
-        client = OpenAI()
+        client = OpenAI(api_key=api_key, base_url=base_url)
 
     @retry_on_failure(
         max_retries=max_retries,
