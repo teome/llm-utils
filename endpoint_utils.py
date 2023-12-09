@@ -33,7 +33,7 @@ def retry_on_failure(max_retries=3, delay=1, backoff=2, exceptions=(requests.exc
     return decorator
 
 
-def call_openai_chat_completions(
+def openai_chat_completions_create(
     messages,
     model="gpt-3.5-turbo",
     client=None,
@@ -80,7 +80,7 @@ def call_openai_chat_completions(
         backoff=backoff,
         exceptions=(requests.exceptions.RequestException,),
     )
-    def create_chat_completions():
+    def chat_completions_create():
         # Call the chat completions API
         response = client.chat.completions.create(
             model=model,
@@ -93,9 +93,9 @@ def call_openai_chat_completions(
         return response
 
     response = None
-    response = create_chat_completions()
+    response = chat_completions_create()
 
     # Return the generated completions
     if return_response:
-        return create_chat_completions().choices[0].message.content, response
-    return create_chat_completions().choices[0].message.content
+        return response.choices[0].message.content, response
+    return response.choices[0].message.content
