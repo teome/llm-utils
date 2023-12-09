@@ -13,16 +13,19 @@ def conversation_llama_2():
     )
     return conversation
 
+
 def test_get_prompt(conversation_llama_2):
     prompt = conversation_llama_2.get_prompt(add_generator_prompt=False)
     expected_prompt = "<s>[INST] <<SYS>>\nThis is a system message\n<</SYS>>\n\nHello [/INST] Hi there! </s>"
     assert prompt == expected_prompt
+
 
 def test_get_prompt_with_generator_prompt(conversation_llama_2):
     conversation_llama_2.append_message("user", "How now brown cow?")
     prompt = conversation_llama_2.get_prompt(add_generator_prompt=True)
     expected_prompt = "<s>[INST] <<SYS>>\nThis is a system message\n<</SYS>>\n\nHello [/INST] Hi there! </s><s>[INST] How now brown cow? [/INST] "
     assert prompt == expected_prompt
+
 
 def test_copy(conversation_llama_2):
     copied_conversation = conversation_llama_2.copy()
@@ -35,10 +38,12 @@ def test_copy(conversation_llama_2):
     assert copied_conversation.stop_str == conversation_llama_2.stop_str
     assert copied_conversation.stop_token_ids == conversation_llama_2.stop_token_ids
 
+
 def test_register_conv_template():
     conversation = Conversation(name="test", roles=("user", "assistant"), messages=[])
     register_conv_template(conversation)
     assert conv_templates[conversation.name] == conversation
+
 
 def test_get_conv_template():
     conversation = Conversation(name="test", roles=("user", "assistant"), messages=[])
@@ -46,9 +51,11 @@ def test_get_conv_template():
     retrieved_conversation = get_conv_template(conversation.name)
     assert retrieved_conversation == conversation
 
+
 def test_register_already_existing_without_flag():
     with pytest.raises(Exception):
         register_conv_template(Conversation(name="llama-2", roles=("user", "assistant"), messages=[]))
+
 
 def test_to_openai_api_messages(conversation_llama_2):
     messages = conversation_llama_2.to_openai_api_messages()
