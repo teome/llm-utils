@@ -107,6 +107,12 @@ class Conversation:
     def append_messages(self, messages: List[Dict[str, str]]):
         self.messages.extend(messages)
 
+    def to_openai_api_messages(self):
+        """Convert the conversation to OpenAI chat completion format."""
+
+        # not much to do as we're already using the same dict format, but use the offset
+        return self.messages[self.offset:]
+
     def copy(self):
         return Conversation(
             name=self.name,

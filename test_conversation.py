@@ -50,6 +50,16 @@ def test_register_already_existing_without_flag():
     with pytest.raises(Exception):
         register_conv_template(Conversation(name="llama-2", roles=("user", "assistant"), messages=[]))
 
+def test_to_openai_api_messages(conversation_llama_2):
+    messages = conversation_llama_2.to_openai_api_messages()
+    expected_messages = [
+        {"role": "system", "content": "This is a system message"},
+        {"role": "user", "content": "Hello"},
+        {"role": "assistant", "content": "Hi there!"},
+    ]
+    assert messages == expected_messages
+
+
 def test_chatml_template():
     conversation = get_conv_template("chatml")
     assert conversation.name == "chatml"
