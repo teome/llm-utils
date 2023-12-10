@@ -182,8 +182,8 @@ class Conversation:
 
         if detailed:
             non_role_strs = ' |'.join([f"{k}: {v}" for k, v in message.items() if k != 'role'])
-            return f"{terminal_color}role: {message['role']} | {non_role_strs}{_terminal_colors['endc']}"
-        return f"{terminal_color}{message['role']}: {message['content']}{_terminal_colors['endc']}"
+            return f"{terminal_color}role: {message['role']}{_terminal_colors['endc']} | {non_role_strs}"
+        return f"{terminal_color}{message['role']}:{_terminal_colors['endc']} {message['content']}"
 
     def display_conversation(self, detailed=False, color_scheme=None):
         """Display the conversation."""
