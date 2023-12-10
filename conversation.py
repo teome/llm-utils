@@ -104,6 +104,11 @@ class Conversation:
     # sep_style: SeparatorStyle = SeparatorStyle.ADD_COLON_SINGLE
     # sep: str = "\n"
     # sep2: str = None
+    # Some models (e.g. Mistral, deviate from the standard format and have just a start token
+    # for all following messages, and the user message doesn't have one. This is different from
+    # the model it derived from llama-2 which has a start token for each user message. This is a
+    # hack to get around that confusing implementation. Why can't people just settle on a format!)
+    start_str: str = ""
     # Stop criteria (the default one is EOS token)
     stop_str: Union[str, List[str]] = None
     # Stops generation if meeting any token in this list
@@ -111,7 +116,7 @@ class Conversation:
 
     def get_prompt(self, add_generator_prompt=True) -> str:
         """Get the prompt for the conversation."""
-        ret = ""
+        ret = "" + self.start_str
         system_content = ""
         for i, message in enumerate(self.messages):
             if message["role"] == "system" and self.system_in_user:
@@ -243,7 +248,7 @@ register_conv_template(
         system_in_user=True,
         messages=[],
         offset=0,
-        stop_str=None,
+        stop_str="</s>",
         stop_token_ids=None,
     )
 )
@@ -254,14 +259,15 @@ register_conv_template(
         roles=("system", "user", "assistant"),
         roles_templates={
             "system": "<<SYS>>\n{}\n<</SYS>>\n\n",
-            "user": "<s>[INST] {} [/INST]",
+            "user": "[INST] {} [/INST]",
             "assistant": " {} </s>",
         },
         generator_str=" ",
         system_in_user=True,
         messages=[],
         offset=0,
-        stop_str=None,
+        start_str="<s>",
+        stop_str="</s>",
         stop_token_ids=None,
     )
 )
