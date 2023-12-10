@@ -21,7 +21,7 @@ def test_get_prompt(conversation_llama_2):
 
 
 def test_get_prompt_with_generator_prompt(conversation_llama_2):
-    conversation_llama_2.append_message("user", "How now brown cow?")
+    conversation_llama_2.append_message({"role": "user", "content": "How now brown cow?"})
     prompt = conversation_llama_2.get_prompt(add_generator_prompt=True)
     expected_prompt = "<s>[INST] <<SYS>>\nThis is a system message\n<</SYS>>\n\nHello [/INST] Hi there! </s><s>[INST] How now brown cow? [/INST] "
     assert prompt == expected_prompt
