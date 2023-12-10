@@ -3,6 +3,7 @@ from functools import wraps
 import time
 from warnings import warn
 from openai import OpenAI
+from openai.types.chat import ChatCompletion
 # from openai.resources.chat.completions import Completions
 import requests
 
@@ -31,6 +32,16 @@ def retry_on_failure(max_retries=3, delay=1, backoff=2, exceptions=(requests.exc
             return func(*args, **kwargs)
         return wrapper
     return decorator
+
+
+def openai_extract_chat_completion_message(response: ChatCompletion) -> dict:
+    """Ensure handling of None values to allow for use back into a conversation
+    
+    Simply calls model_dump on a pydantic object with exclude_unset=True.
+    
+    This avoids issues with e.g. function call args that should be empty dict, not 
+    Non if unset"""
+    return response.choices[0].message.model_dump(exclude_unset=True)
 
 
 def openai_chat_completions_create(

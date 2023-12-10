@@ -1,6 +1,6 @@
 # %%
 import conversation
-from endpoint_utils import OpenAI, openai_chat_completions_create
+from endpoint_utils import OpenAI, openai_chat_completions_create, openai_extract_chat_completion_message
 
 
 initial_messages = [
@@ -45,7 +45,10 @@ print(message)
 print(response.model_dump_json(indent=2))
 
 # %%
-conv.append_message(response.choices[0].message.model_dump())
+# conv.append_message(response.choices[0].message.model_dump(exclude_unset=True))
+conv.append_message(openai_extract_chat_completion_message(response))
+
+
 conv.display_conversation()
 # %%
 
@@ -53,3 +56,18 @@ conv.append_message({"role": "user", "content": "Who were the founders?"})
 prompt = conv.get_prompt()
 print(prompt)
 # %%
+message, response = openai_chat_completions_create(
+    messages=conv.messages,
+    model=MODEL,
+    client=client,
+    return_response=True,
+    max_tokens=256,
+    temperature=0.8,
+    max_retries=1,
+)
+
+# %%
+conv.append_message(openai_extract_chat_completion_message(response))
+print(response.model_dump_json(indent=2))
+print()
+conv.display_conversation(detailed=True)
