@@ -109,4 +109,57 @@ conv.display_conversation()
 conv.messages.pop()
 conv.append_message(request.json()["choices"][0]["message"])
 conv.display_conversation()
+
+
+
+# %%[markdown]
+# ## Experimenting with prompt formatting with tokenizer more directly for llama and mistral models
+
+# %%
+import tokenize_llama_utils
+from tokenize_llama_utils import Tokenizer, LlamaPrompt
+
+tokenizer = Tokenizer(model_path="models/meta-llama/Llama-2-7b-chat/tokenizer.model")
+print(tokenizer.bos_id, tokenizer.eos_id, tokenizer.pad_id)
+print(tokenizer.decode([tokenizer.bos_id, tokenizer.eos_id,]))
+
+
+messages = [
+    {"role": "user", "content": "What is your favourite condiment?"},
+    {"role": "assistant", "content": "Well, I'm quite partial to a good squeeze of fresh lemon juice. It adds just the right amount of zesty flavour to whatever I'm cooking up in the kitchen!"},
+    {"role": "user", "content": "Do you have mayonnaise recipes?"},]
+prompt_tokens = LlamaPrompt.chat_completion([messages], tokenizer)
+print('MetaAI implementation sentencpiece tokenizer')
+print(prompt_tokens)
+print(tokenizer.decode(prompt_tokens[0]))
+
+# %%
+# Quick test to see equivalence. Notet that using the sentencepiece tokenizer directly we
+# get a different result. Seems it't not encoding the special tags as expected (or as HF tokenizer does),
+# so DON'T DO THIS
+text = "<s>[INST] What is your favourite condiment? [/INST] " \
+"Well, I'm quite partial to a good squeeze of fresh lemon juice. It adds just the right amount of zesty flavour to whatever I'm cooking up in the kitchen!</s> " \
+"<s>[INST] Do you have mayonnaise recipes? [/INST] "
+
+prompt_tokens = tokenizer.encode(text, bos=False, eos=False)
+print(prompt_tokens)
+print(f'Input text:\n{text}\n')
+print(print(f'Output text:\n{tokenizer.decode(prompt_tokens)}'))
+
+# %%
+# for comparison, look at the same but with HF tokenizer -- Note we have to use the HF tokenizer to get chat template
+from transformers import AutoTokenizer
+hf_tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf")
+print(hf_tokenizer.bos_token_id, hf_tokenizer.eos_token_id, hf_tokenizer.pad_token_id)
+print('HF implementation tokenizer and chat template from raw string')
+print(hf_tokenizer.decode([hf_tokenizer.bos_token_id, hf_tokenizer.eos_token_id,]))
+hf_prompt_tokens = hf_tokenizer.apply_chat_template(messages)
+print(hf_prompt_tokens)
+print(hf_tokenizer.decode(hf_prompt_tokens, skip_special_tokens=True))
+
+
+# TODO redo this for mistral, and note the need to remove the <s> bos from additional user prompts,
+# just use at start and eos for all assistant
+
+
 # %%
