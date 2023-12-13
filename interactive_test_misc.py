@@ -1,4 +1,6 @@
 # %%
+from typing import List
+
 import conversation
 from endpoint_utils import (
     OpenAI, openai_chat_completions_create, openai_extract_chat_completion_message,
@@ -112,8 +114,15 @@ conv.display_conversation()
 
 
 
+
+
+###################################################
 # %%[markdown]
 # ## Experimenting with prompt formatting with tokenizer more directly for llama and mistral models
+
+
+# %%[markdown]
+# ### Llama first
 
 # %%
 import tokenize_llama_utils
@@ -124,7 +133,7 @@ print(tokenizer.bos_id, tokenizer.eos_id, tokenizer.pad_id)
 print(tokenizer.decode([tokenizer.bos_id, tokenizer.eos_id,]))
 
 
-messages = [
+messages: List[tokenize_llama_utils.Message] = [
     {"role": "user", "content": "What is your favourite condiment?"},
     {"role": "assistant", "content": "Well, I'm quite partial to a good squeeze of fresh lemon juice. It adds just the right amount of zesty flavour to whatever I'm cooking up in the kitchen!"},
     {"role": "user", "content": "Do you have mayonnaise recipes?"},]
@@ -137,12 +146,13 @@ print(tokenizer.decode(prompt_tokens[0]))
 # Quick test to see equivalence. Notet that using the sentencepiece tokenizer directly we
 # get a different result. Seems it't not encoding the special tags as expected (or as HF tokenizer does),
 # so DON'T DO THIS
-text = "<s>[INST] What is your favourite condiment? [/INST] " \
-"Well, I'm quite partial to a good squeeze of fresh lemon juice. It adds just the right amount of zesty flavour to whatever I'm cooking up in the kitchen!</s> " \
-"<s>[INST] Do you have mayonnaise recipes? [/INST] "
+text = "<s> [INST] What is your favourite condiment? [/INST] " \
+"Well, I'm quite partial to a good squeeze of fresh lemon juice. It adds just the right amount of zesty flavour to whatever I'm cooking up in the kitchen!  </s>" \
+"<s> [INST] Do you have mayonnaise recipes? [/INST] "
 
 prompt_tokens = tokenizer.encode(text, bos=False, eos=False)
 print(prompt_tokens)
+print('HF implementation tokenizer and chat template from raw string')
 print(f'Input text:\n{text}\n')
 print(print(f'Output text:\n{tokenizer.decode(prompt_tokens)}'))
 
@@ -151,15 +161,58 @@ print(print(f'Output text:\n{tokenizer.decode(prompt_tokens)}'))
 from transformers import AutoTokenizer
 hf_tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf")
 print(hf_tokenizer.bos_token_id, hf_tokenizer.eos_token_id, hf_tokenizer.pad_token_id)
-print('HF implementation tokenizer and chat template from raw string')
+print('HF implementation tokenizer and chat template from messages list of dicts')
+
 print(hf_tokenizer.decode([hf_tokenizer.bos_token_id, hf_tokenizer.eos_token_id,]))
 hf_prompt_tokens = hf_tokenizer.apply_chat_template(messages)
 print(hf_prompt_tokens)
 print(hf_tokenizer.decode(hf_prompt_tokens, skip_special_tokens=True))
 
 
-# TODO redo this for mistral, and note the need to remove the <s> bos from additional user prompts,
-# just use at start and eos for all assistant
 
+###################################################
+# %%[markdown]
+
+# ### Direct comparison on tokenization and decoding
+# %%
+
+print('Compare tokenized prompts and decoded strings token by token\n')
+
+prompt_tokens = LlamaPrompt.chat_completion([messages], tokenizer)[0]
+print('MetaAI implementation sentencpiece tokenizer from messages list of dicts')
+print(prompt_tokens)
+decoded_prompt = tokenizer.decode(prompt_tokens)
+print(decoded_prompt)
+
+hf_prompt_tokens = hf_tokenizer.apply_chat_template(messages)
+print('\n\nHF tokenizer with chat template from messages list of dicts')
+print(hf_prompt_tokens)
+hf_decoded_prompt = hf_tokenizer.decode(hf_prompt_tokens, skip_special_tokens=True)
+print(hf_decoded_prompt)
+
+print('\n\nTest equivalence of prompt tokens and decoded strings')
+if prompt_tokens == hf_prompt_tokens:
+    print('Prompt tokens are the same')
+else:
+    print('Prompt tokens are different')
+    assert prompt_tokens == hf_prompt_tokens, 'Prompt tokens are different'
+
+if decoded_prompt == hf_decoded_prompt:
+    print('Decoded prompts are the same')
+else:
+    print('\n\nDecoded prompts are different')
+    print(f'MetaAI decoded prompt:\n{decoded_prompt}')
+    print(f'HF decoded prompt:\n{hf_decoded_prompt}')
+    assert decoded_prompt == hf_decoded_prompt, 'Decoded prompts are different'
+
+
+
+# %%
+# %%[markdown]
+
+# ### Mistral version of the Llama tokenization without BOS at the start of every user message
+# %%
+from tokenize_mistral_utils import MistralPrompt
+MistralPrompt.chat_completion([messages], tokenizer)[0]
 
 # %%

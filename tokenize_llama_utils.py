@@ -125,10 +125,9 @@ class LlamaPrompt:
             AssertionError: If the dialog roles are not in the required 'user', 'assistant', and optional 'system' order.
 
         Note:
-            This method generates assistant responses for the provided conversational dialogs.
-            It employs nucleus sampling to introduce controlled randomness in text generation.
-            If logprobs is True, token log probabilities are computed for each generated token.
-
+            This method generates chat assistant prompts from a list of dialogs. Each dialog is a list of messages,
+                that can start with a system message, followed by a user message, and alternating between user and
+                assistant messages. The last message in a dialog must be from the user
         """
         # could just reference them via the class, but redefine here for clarity and to keep the rest of the code the same
         B_INST = cls.B_INST
