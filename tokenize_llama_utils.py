@@ -13,14 +13,6 @@ from sentencepiece import SentencePieceProcessor
 # https://github.com/facebookresearch/llama/blob/main/llama/generation.py#L284
 
 
-
-# def tokenize_messages(messages: List[str], tokenize_func: Optional[Callable] = None, tokenizer: Optional[Callable] = None) -> List[int]:
-#     if tokenize_func is None and tokenizer is None:
-#         raise ValueError("Either tokenize_func or tokenizer must be provided.")
-#         tokenize_func = tokenize_string
-
-
-
 logger = getLogger()
 
 
