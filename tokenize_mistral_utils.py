@@ -33,8 +33,8 @@ class MistralPrompt(LlamaPrompt):
                 that can start with a system message, followed by a user message, and alternating between user and
                 assistant messages. The last message in a dialog must be from the user
             It is only slightly different from the Llama prompt in that the BOS tokens are only added to the start of
-            the first message, whereas the EOS are added to the end of each assistant response message. Why did they
-            do this?
+                the first message, whereas the EOS are added to the end of each assistant response message. Why did
+                they do this?
         """
         # could just reference them via the class, but redefine here for clarity and to keep the rest of the code the same
         B_INST = cls.B_INST
