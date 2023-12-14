@@ -7,6 +7,7 @@ class MistralPrompt(LlamaPrompt):
         cls,
         dialogs: List[Dialog],
         tokenizer: Callable,
+        include_system_tags: bool = False,
     ) -> List[int]:
         """
         Generate assistant responses for a list of conversational dialogs using the language generation model.
@@ -17,6 +18,8 @@ class MistralPrompt(LlamaPrompt):
             dialogs (List[Dialog]): List of conversational dialogs, where each dialog is a list of messages.
             tokenizer (Optional[Callable]): Tokenizer to use for encoding the prompt. If None, the class must be
                 instantiated with a tokenizer or tokenizer_path.
+            include_system_tags (bool): Whether to include the system tags in the prompt. Default False given that
+                the reference prompts from Mistral don't use them.
 
         Returns:
             List[ChatPrediction]: List of chat predictions, each containing the assistant's generated response.
@@ -36,10 +39,11 @@ class MistralPrompt(LlamaPrompt):
         # could just reference them via the class, but redefine here for clarity and to keep the rest of the code the same
         B_INST = cls.B_INST
         E_INST = cls.E_INST
-        B_SYS = cls.B_SYS
-        E_SYS = cls.E_SYS
         SPECIAL_TAGS = cls.SPECIAL_TAGS
         UNSAFE_ERROR = cls.UNSAFE_ERROR
+
+        b_sys = cls.B_SYS if include_system_tags else ""
+        e_sys = cls.E_SYS if include_system_tags else "\n\n"
 
         prompt_tokens = []
         unsafe_requests = []
@@ -51,9 +55,9 @@ class MistralPrompt(LlamaPrompt):
                 dialog = [
                     {
                         "role": dialog[1]["role"],
-                        "content": B_SYS
+                        "content": b_sys
                         + dialog[0]["content"]
-                        + E_SYS
+                        + e_sys
                         + dialog[1]["content"],
                     }
                 ] + dialog[2:]

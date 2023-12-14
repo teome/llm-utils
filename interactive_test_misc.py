@@ -1,12 +1,14 @@
 # %%
 from typing import List
 
+from transformers import AutoTokenizer
+
 import conversation
 from endpoint_utils import (
     OpenAI, openai_chat_completions_create, openai_extract_chat_completion_message,
     prepare_http_request_json, openai_http_api_request)
 
-
+# %%
 initial_messages = [
     {"role": "system", "content": "You are Samantha, a helpful, friendly, funny and highly knowledgeable assistant."},
     {"role": "user", "content": "What is the history of the Metalheadz label?"}
@@ -88,7 +90,7 @@ conv.messages = initial_messages
 json_data = prepare_http_request_json(messages=conv.messages, model=MODEL,)
 
 # %%
-request = openai_http_api_request(url="https://api.openai.com/v1/chat/completions", json_data=json_data)
+request = openai_http_api_request(url="https://api.openai.com/v1/chat/completions", json_data=json_data, timeout=60)
 # %%
 print(request.json())
 req_json = request.json()["choices"][0]
@@ -115,28 +117,30 @@ conv.display_conversation()
 
 
 
-
+###################################################
 ###################################################
 # %%[markdown]
 # ## Experimenting with prompt formatting with tokenizer more directly for llama and mistral models
+
+# %%
+import tokenize_llama_utils
+from tokenize_llama_utils import Tokenizer, LlamaPrompt
+
+messages: List[tokenize_llama_utils.Message] = [
+    {"role": "user", "content": "What is your favourite condiment?"},
+    {"role": "assistant", "content": "Well, I'm quite partial to a good squeeze of fresh lemon juice. It adds just the right amount of zesty flavour to whatever I'm cooking up in the kitchen!"},
+    {"role": "user", "content": "Do you have mayonnaise recipes?"},]
 
 
 # %%[markdown]
 # ### Llama first
 
 # %%
-import tokenize_llama_utils
-from tokenize_llama_utils import Tokenizer, LlamaPrompt
 
 tokenizer = Tokenizer(model_path="models/meta-llama/Llama-2-7b-chat/tokenizer.model")
 print(tokenizer.bos_id, tokenizer.eos_id, tokenizer.pad_id)
 print(tokenizer.decode([tokenizer.bos_id, tokenizer.eos_id,]))
 
-
-messages: List[tokenize_llama_utils.Message] = [
-    {"role": "user", "content": "What is your favourite condiment?"},
-    {"role": "assistant", "content": "Well, I'm quite partial to a good squeeze of fresh lemon juice. It adds just the right amount of zesty flavour to whatever I'm cooking up in the kitchen!"},
-    {"role": "user", "content": "Do you have mayonnaise recipes?"},]
 prompt_tokens = LlamaPrompt.chat_completion([messages], tokenizer)
 print('MetaAI implementation sentencpiece tokenizer')
 print(prompt_tokens)
@@ -158,7 +162,7 @@ print(print(f'Output text:\n{tokenizer.decode(prompt_tokens)}'))
 
 # %%
 # for comparison, look at the same but with HF tokenizer -- Note we have to use the HF tokenizer to get chat template
-from transformers import AutoTokenizer
+
 hf_tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf")
 print(hf_tokenizer.bos_token_id, hf_tokenizer.eos_token_id, hf_tokenizer.pad_token_id)
 print('HF implementation tokenizer and chat template from messages list of dicts')
@@ -207,12 +211,36 @@ else:
 
 
 
-# %%
-# %%[markdown]
+# %%[markdown] ##################################################################
 
 # ### Mistral version of the Llama tokenization without BOS at the start of every user message
 # %%
 from tokenize_mistral_utils import MistralPrompt
-MistralPrompt.chat_completion([messages], tokenizer)[0]
 
+# %%
+mistral_tokenizer = Tokenizer(model_path="models/mistralai/Mixtral-8x7B-Instruct-v0.1/tokenizer.model")
+# %%
+print('Mistral implementation sentencpiece tokenizer from messages list of dicts')
+mistral_prompt_tokens = MistralPrompt.chat_completion([messages], tokenizer)[0]
+print(mistral_prompt_tokens)
+mistral_decoded_prompt = tokenizer.decode(mistral_prompt_tokens)
+print(mistral_decoded_prompt)
+
+# %%
+hf_tokenizer = AutoTokenizer.from_pretrained("mistralai/Mixtral-8x7B-Instruct-v0.1")
+hf_missral_prompt_tokens = hf_tokenizer.apply_chat_template(messages)
+
+# %%
+# %%[markdown]
+# ### Check Mistral prompt when using a system prompt in the messages list, with and withuot the system tags
+# %%
+messages_with_system = [
+    {"role": "system", "content": "You are Samantha, a helpful, friendly, funny and highly knowledgeable assistant."},
+    {"role": "user", "content": "What is your favourite condiment?"},
+    {"role": "assistant", "content": "Well, I'm quite partial to a good squeeze of fresh lemon juice. It adds just the right amount of zesty flavour to whatever I'm cooking up in the kitchen!"},
+    {"role": "user", "content": "Do you have mayonnaise recipes?"},]
+print('Mistral prompt with system prompt and no system tags')
+print(tokenizer.decode(MistralPrompt.chat_completion([messages_with_system], tokenizer)[0]))
+print('Mistral prompt with system prompt and no system tags')
+print(tokenizer.decode(MistralPrompt.chat_completion([messages_with_system], tokenizer, include_system_tags=True)[0]))
 # %%
