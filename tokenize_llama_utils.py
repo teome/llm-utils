@@ -97,7 +97,7 @@ class LlamaPrompt:
     def chat_completion(
         cls,
         dialogs: List[Dialog],
-        tokenizer: Callable,
+        tokenizer: Tokenizer,
     ) -> List[int]:
         """
         Generate assistant responses for a list of conversational dialogs using the language generation model.
@@ -106,8 +106,8 @@ class LlamaPrompt:
 
         Args:
             dialogs (List[Dialog]): List of conversational dialogs, where each dialog is a list of messages.
-            tokenizer (Optional[Callable]): Tokenizer to use for encoding the prompt. If None, the class must be
-                instantiated with a tokenizer or tokenizer_path.
+            tokenizer Tokenizer: Tokenizer to use for encoding the prompt. Underlying tokenizer is based on
+                SentencePiece.
 
         Returns:
             List[ChatPrediction]: List of chat predictions, each containing the assistant's generated response.
