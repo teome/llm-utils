@@ -3,13 +3,14 @@
 
 # %%
 
-from typing import List
+from typing import List, Dict
 
 from transformers import AutoTokenizer
 
 import tokenize_llama_utils
-from tokenize_llama_utils import Tokenizer, LlamaPrompt
+from tokenize_llama_utils import LlamaPrompt
 import tokenize_mistral_utils
+from tokenize_mistral_utils import MistralPrompt
 
 # %%
 
@@ -26,13 +27,14 @@ messages = [
     {"role": "user", "content": "+4"},
 ]
 
+expected_tok_ids = [1, 733, 16289, 28793, 28705, 28750, 28806, 28750, 733, 28748, 16289, 28793, 28705, 28781, 28808, 2, 733, 16289, 28793, 648, 28750, 733, 28748, 16289, 28793, 28705, 28784, 28808, 2, 733, 16289, 28793, 648, 28781, 733, 28748, 16289, 28793]
+expected_tok_ids_to_tokens = ['<s>', '▁[', 'INST', ']', '▁', '2', '+', '2', '▁[', '/', 'INST', ']', '▁', '4', '!', '</s>', '▁[', 'INST', ']', '▁+', '2', '▁[', '/', 'INST', ']', '▁', '6', '!', '</s>', '▁[', 'INST', ']', '▁+', '4', '▁[', '/', 'INST', ']']
 
 # %%[markdown] ##################################################################
 # ## Mistral
+# This is Mistral team provided reference code for tokenizattion
+# Other methods must be equivalent to this
 # %%
-
-from transformers import AutoTokenizer
-from typing import List, Dict
 
 def build_prompt(
     messages: List[Dict[str, str]],
@@ -48,48 +50,94 @@ def build_prompt(
             prompt += f"[INST] {content} [/INST]"
         else:
             prompt += f" {content}</s>"
+    print(f'Prompt:\n{prompt}')
     tokens_ids = tokenizer.encode(prompt)
     token_str = tokenizer.convert_ids_to_tokens(tokens_ids)
     return tokens_ids, token_str
 
 hf_tok = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.2")
-tok = Tokenizer(model_path="models/mistralai/Mistral-7B-Instruct-v0.2/tokenizer.model")
+tok = tokenize_mistral_utils.Tokenizer(model_path="models/mistralai/Mistral-7B-Instruct-v0.2/tokenizer.model")
+
+print('HF tokenizer:', type(hf_tok))
+print('Mistral reference (sentencepiece) tokenizer:', type(tok), type(tok._model))
 
 # %%
-print(hf_tok.__class__)
-print(tok.__class__)
 
-tokens_ids, token_str = build_prompt(messages, hf_tok)
-print(tokens_ids)
+mistral_ref_token_ids, mistral_ref_token_str = build_prompt(messages, hf_tok)
+print(mistral_ref_token_ids)
+print(mistral_ref_token_str)
+print(hf_tok.decode(mistral_ref_token_ids, skip_special_tokens=True))
+print(hf_tok.decode(mistral_ref_token_ids, skip_special_tokens=False))
+
+
+# %%[markdown]
+# Same but using the sentencepiece tokenizer directly and Mistral's class and same string formatting.
+# This doesn't work correctly because of the handling of special tags in sentencepiece...
+# '</s>' gets split and other tags are split into multiple tokens
+#
+# Lesson is just work more closely with tokens if possible. Can to some extent with HF tokenizer but still
+# need to be careful and some of the chat_templates are still a little different.
+# %%
+prompt = ""
+for i, msg in enumerate(messages):
+    is_user = {"user": True, "assistant": False}[msg["role"]]
+    assert (i % 2 == 0) == is_user
+    content = msg["content"]
+    assert content == content.strip()
+    if is_user:
+        prompt += f"[INST] {content} [/INST]"
+    else:
+        prompt += f" {content}</s>"
+print(f'Prompt:\n{prompt}')
+
+mistral_sp_ids = tok.encode(prompt, bos=True, eos=False)
+mistral_sp_str = tok.decode(mistral_sp_ids)
+print(mistral_sp_ids)
+print(mistral_sp_str)
+print(tok._model.id_to_piece(mistral_sp_ids))
+
+
+# %%[markdown]
+# Both of the following methods work, the first more similar to the original Llama code.
+#
+# Despite this, the second method is probably better as it's more explicit and makes
+# fewer assumptions about the input data.
+#
+# In both cases this is working because it's seperately encoding either messages or pairs
+# of messages, not the whole mult-turn dialog at once.
+
+# %%
+prompt = ""
+dialog_tokens: List[int] = [tok.bos_id]
+for prompt, answer in zip(messages[::2], messages[1::2]):
+    dialog_tokens += tok.encode(
+        f"[INST] {(prompt['content']).strip()} [/INST] {(answer['content']).strip()}",
+        bos=False,
+        eos=True,
+    )
+if messages[-1]["role"] == "user":
+    dialog_tokens += tok.encode(
+        f"[INST] {(messages[-1]['content']).strip()} [/INST]",
+        bos=False,
+        eos=False,
+    )
+
+
+token_ids = dialog_tokens
+token_str = tok.decode(token_ids)
+print(token_ids)
+print(tok._model.id_to_piece(token_ids))
 print(token_str)
-print(hf_tok.decode(tokens_ids, skip_special_tokens=True))
 
+mistral_llama_sp_ids = token_ids.copy()
+mistral_llama_sp_str = tok._model.id_to_piece(token_ids)
 
+# %%[markdown]
+# Seperate tokenization of user and assistant messages and using tokenizer directly and Mistral's class.
+#
+# This feels like the closest thing to what we would actually have with a real user and assistant.
+# That said, it's not what llama did
 # %%
-
-# prompt = ""
-# for i, msg in enumerate(messages):
-#     is_user = {"user": True, "assistant": False}[msg["role"]]
-#     assert (i % 2 == 0) == is_user
-#     content = msg["content"]
-#     assert content == content.strip()
-#     if is_user:
-#         prompt += f"[INST] {content} [/INST]"
-#     else:
-#         prompt += f" {content}</s>"
-
-# token_ids = tok.encode(prompt, bos=True, eos=False)
-# token_str = tok.decode(tokens_ids)
-# print(token_ids)
-# print(token_str)
-# print(tok.sp_model.id_to_piece(token_ids))
-
-
-
-# TODO: modify code to use this method, this is working
-# Note that this is only for constructing the assistant messages manually like this if they've
-# been converted to text. If dealing with the tokens of the assistant message, it will already have </s>
-# TODO update tests to aggree with this
 prompt_toks = [tok.bos_id]
 for i, msg in enumerate(messages):
     is_user = {"user": True, "assistant": False}[msg["role"]]
@@ -103,24 +151,71 @@ for i, msg in enumerate(messages):
         prompt_toks += tok.encode(f"{content}", bos=False, eos=True)
 
 token_ids = prompt_toks
-token_str = tok.decode(tokens_ids)
+token_str = tok.decode(token_ids)
 print(token_ids)
-print(tok.sp_model.id_to_piece(token_ids))
+print(tok._model.id_to_piece(token_ids))
 print(token_str)
 
+mistral_working_sp_ids = token_ids.copy()
+mistral_working_sp_str = tok._model.id_to_piece(token_ids)
 
 
+# %%[markdown]
+# ---
+#
+# ### Verifying equivalence of the two methods and implementation in MistralPrompt class
+# The approach from the Mistral team using HF tokenizer and second of these reference methods
+# using sentencepiece are implemented in the tokenizer_mistral_utils.py 'MistralPrompt' class
+#
+# Verify equivalence of the two methods
 # %%
+mistral_prompt = tokenize_mistral_utils.MistralPrompt
 
-# Expected values
-tokens_ids, token_str = build_prompt(messages, tok)
-print(tokens_ids)
-expected_tok_ids = [1, 733, 16289, 28793, 28705, 28750, 28806, 28750, 733, 28748, 16289, 28793, 28705, 28781, 28808, 2, 733, 16289, 28793, 648, 28750, 733, 28748, 16289, 28793, 28705, 28784, 28808, 2, 733, 16289, 28793, 648, 28781, 733, 28748, 16289, 28793]
-print(token_str)
-expected_tok_ids_to_tokens = ['<s>', '▁[', 'INST', ']', '▁', '2', '+', '2', '▁[', '/', 'INST', ']', '▁', '4', '!', '</s>', '▁[', 'INST', ']', '▁+', '2', '▁[', '/', 'INST', ']', '▁', '6', '!', '</s>', '▁[', 'INST', ']', '▁+', '4', '▁[', '/', 'INST', ']']
+token_ids_hf = mistral_prompt.encode_instruct_hf(messages, hf_tok)
+token_str_hf = hf_tok.convert_ids_to_tokens(token_ids_hf)
+print('HF tokenizer and string prompt')
+print(token_ids_hf)
+print(token_str_hf)
+print(hf_tok.decode(token_ids_hf, skip_special_tokens=True))
 
+token_ids_sp = mistral_prompt.encode_instruct_mistral(messages, tok)
+token_str_sp = tok._model.id_to_piece(token_ids_sp)
+print('Sentencepiece tokenizer and per-message tokenization')
+print(token_ids_sp)
+print(token_str_sp)
+print(tok.decode(token_ids_sp))
 
+assert token_ids_hf == token_ids_sp, 'Prompt tokens are different'
+assert token_str_hf == token_str_sp, 'Prompt string encodings are different'
+assert token_ids_hf == mistral_ref_token_ids, 'Prompt tokens are different'
+assert token_str_hf == mistral_ref_token_str, 'Prompt string encodings are different'
+print('\n\n***All tests passed***\n\n')
 
+# %%[markdown]
+# ### Test system prompt encoding with the system tags
+#
+# Mistral don't use these tags but the functioality may be useful and the tags can be
+# overridden to be anything using the class members `B_SYS`, `E_SYS`
+# %%
+messages_with_system = [{'role': 'system', 'content': 'You are a helpful AI.'}] + messages
+
+token_ids_hf = MistralPrompt.encode_instruct_hf(messages_with_system, hf_tok, include_system_tags=True)
+token_str_hf = hf_tok.convert_ids_to_tokens(token_ids_hf)
+print('HF tokenizer and string prompt')
+print(token_ids_hf)
+print(token_str_hf)
+print(hf_tok.decode(token_ids_hf, skip_special_tokens=True))
+
+token_ids_sp = MistralPrompt.encode_instruct_mistral(messages_with_system, tok, include_system_tags=True)
+token_str_sp = tok._model.id_to_piece(token_ids_sp)
+print('Sentencepiece tokenizer and per-message tokenization')
+print(token_ids_sp)
+print(token_str_sp)
+print(tok.decode(token_ids_sp))
+
+assert token_ids_hf == token_ids_sp, 'Prompt tokens are different'
+print('\n\n***All tests passed***\n\n')
+#%%
 
 
 
@@ -129,23 +224,23 @@ expected_tok_ids_to_tokens = ['<s>', '▁[', 'INST', ']', '▁', '2', '+', '2', 
 
 
 # %%[markdown] ##################################################################
-# ## Llama
+# ## Llama LLamaPrompt class testing
 
 # %%
 
-tokenizer = Tokenizer(model_path="models/meta-llama/Llama-2-7b-chat/tokenizer.model")
+tokenizer = tokenize_llama_utils.Tokenizer(model_path="models/meta-llama/Llama-2-7b-chat/tokenizer.model")
 print(tokenizer.bos_id, tokenizer.eos_id, tokenizer.pad_id)
 print(tokenizer.decode([tokenizer.bos_id, tokenizer.eos_id,]))
 
-prompt_tokens = LlamaPrompt.chat_completion([messages], tokenizer)
+llama_prompt = tokenize_llama_utils.LlamaPrompt
+prompt_tokens = llama_prompt.encode_instruct(messages, tokenizer)
 print('MetaAI implementation sentencpiece tokenizer')
 print(prompt_tokens)
 print(tokenizer.decode(prompt_tokens[0]))
 
 # %%
-# Quick test to see equivalence. Notet that using the sentencepiece tokenizer directly we
-# get a different result. Seems it't not encoding the special tags as expected (or as HF tokenizer does),
-# so DON'T DO THIS
+# Quick test to see equivalence. Note that using the sentencepiece tokenizer directly we
+# get a different result. It's not expecting special bos/eos tokens as strings
 text = "<s> [INST] What is your favourite condiment? [/INST] " \
 "Well, I'm quite partial to a good squeeze of fresh lemon juice. It adds just the right amount of zesty flavour to whatever I'm cooking up in the kitchen!  </s>" \
 "<s> [INST] Do you have mayonnaise recipes? [/INST] "
@@ -204,52 +299,4 @@ else:
     print(f'MetaAI decoded prompt:\n{decoded_prompt}')
     print(f'HF decoded prompt:\n{hf_decoded_prompt}')
     assert decoded_prompt == hf_decoded_prompt, 'Decoded prompts are different'
-
-
-
-# %%[markdown] ##################################################################
-
-# ### Mistral version of the Llama tokenization without BOS at the start of every user message
-# %%
-from tokenize_mistral_utils import MistralPrompt
-
-# %%
-mistral_tokenizer = Tokenizer(model_path="models/mistralai/Mixtral-8x7B-Instruct-v0.1/tokenizer.model")
-# %%
-print('Mistral implementation sentencpiece tokenizer from messages list of dicts')
-mistral_prompt_tokens = MistralPrompt.chat_completion([messages], tokenizer)[0]
-print(mistral_prompt_tokens)
-mistral_decoded_prompt = tokenizer.decode(mistral_prompt_tokens)
-print(mistral_decoded_prompt)
-
-# %%
-hf_tokenizer = AutoTokenizer.from_pretrained("mistralai/Mixtral-8x7B-Instruct-v0.1")
-hf_mistral_prompt_tokens = hf_tokenizer.apply_chat_template(messages)
-hf_decoded_prompt = hf_tokenizer.decode(hf_mistral_prompt_tokens, skip_special_tokens=False)
-print(mistral_prompt_tokens)
-print(hf_prompt_tokens)
-print(mistral_decoded_prompt)
-print(hf_decoded_prompt)
-
-assert mistral_prompt_tokens == hf_mistral_prompt_tokens, 'Prompt tokens are different'
-# %%
-# %%[markdown]
-# ### Check Mistral prompt when using a system prompt in the messages list, with and withuot the system tags
-# %%
-messages_with_system = [
-    {"role": "system", "content": "You are Samantha, a helpful, friendly, funny and highly knowledgeable assistant."},
-    {"role": "user", "content": "What is your favourite condiment?"},
-    {"role": "assistant", "content": "Well, I'm quite partial to a good squeeze of fresh lemon juice. It adds just the right amount of zesty flavour to whatever I'm cooking up in the kitchen!"},
-    {"role": "user", "content": "Do you have mayonnaise recipes?"},]
-print('Mistral prompt with system prompt and no system tags')
-print(tokenizer.decode(MistralPrompt.chat_completion([messages_with_system], tokenizer)[0]))
-print('Mistral prompt with system prompt and no system tags')
-print(tokenizer.decode(MistralPrompt.chat_completion([messages_with_system], tokenizer, include_system_tags=True)[0]))
-# %%
-hf_tokenizer.apply_chat_template(messages_with_system)
-
-# %%[markdown] ##################################################################
-# ## Mistral alternative approach thanks to talking to the devs themselves
-#
-# They suggested how to implement and test the tokenization and avoid multi-interaction string issues
 
