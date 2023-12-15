@@ -91,7 +91,7 @@ class LlamaPrompt:
     UNSAFE_ERROR = "Error: special tags are not allowed as part of the prompt."
 
     @classmethod
-    def chat_completion(
+    def encode_instruct(
         cls,
         messages: List[Message],
         tokenizer: Tokenizer,
@@ -107,16 +107,16 @@ class LlamaPrompt:
                 SentencePiece.
 
         Returns:
-            List[ChatPrediction]: List of chat predictions, each containing the assistant's generated response.
+            List[Int]: List of encoded tokens for instruct models.
 
         Raises:
             AssertionError: If the last message in a dialog is not from the user.
             AssertionError: If the dialog roles are not in the required 'user', 'assistant', and optional 'system' order.
 
         Note:
-            This method generates chat assistant prompts from a list of dialogs. Each dialog is a list of messages,
-                that can start with a system message, followed by a user message, and alternating between user and
-                assistant messages. The last message in a dialog must be from the user
+            This method generates chat assistant prompt tokens from a list of messages. Each list of messages is can start
+            with a system message, followed by a user message, and alternating between user and assistant messages.
+            The last message in a dialog must be from the user
         """
         # could just reference them via the class, but redefine here for clarity and to keep the rest of the code the same
         B_INST = cls.B_INST
