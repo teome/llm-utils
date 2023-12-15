@@ -204,3 +204,23 @@ class MistralPrompt(LlamaPrompt):
 
         tokens_ids = tokenizer.encode(prompt)
         return tokens_ids
+
+# Code given by Mistral team during discussion of the formatting issues with OSS libs
+def _mistral_team_ref_build_prompt(
+    messages: List[Dict[str, str]],
+    tokenizer: AutoTokenizer,
+):
+    prompt = ""
+    for i, msg in enumerate(messages):
+        is_user = {"user": True, "assistant": False}[msg["role"]]
+        assert (i % 2 == 0) == is_user
+        content = msg["content"]
+        assert content == content.strip()
+        if is_user:
+            prompt += f"[INST] {content} [/INST]"
+        else:
+            prompt += f" {content}</s>"
+    print(f'Prompt:\n{prompt}')
+    tokens_ids = tokenizer.encode(prompt)
+    token_str = tokenizer.convert_ids_to_tokens(tokens_ids)
+    return tokens_ids, token_str
