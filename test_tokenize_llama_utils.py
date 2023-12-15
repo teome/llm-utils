@@ -35,10 +35,11 @@ def test_llama_prompt_chat_completion(tokenizer):
         ],
     ]
 
-    prompt_tokens = LlamaPrompt.chat_completion(dialogs, tokenizer)
-    assert isinstance(prompt_tokens, list)
-    assert len(prompt_tokens) == 2
-    assert all(isinstance(tokens, list) for tokens in prompt_tokens)
+    for dialog in dialogs:
+        prompt_tokens = LlamaPrompt.chat_completion(dialog, tokenizer)
+        assert isinstance(prompt_tokens, list)
+        assert all(isinstance(tokens, list) for tokens in prompt_tokens)
+
 
 def test_llama_tokenization_hf_chat_template(tokenizer):
     # copied from interactive_test_misc.py
@@ -53,7 +54,7 @@ def test_llama_tokenization_hf_chat_template(tokenizer):
 
     print('Compare tokenized prompts and decoded strings token by token\n')
 
-    prompt_tokens = LlamaPrompt.chat_completion([messages], tokenizer)[0]
+    prompt_tokens = LlamaPrompt.chat_completion(messages, tokenizer)
     print('MetaAI implementation sentencpiece tokenizer from messages list of dicts')
     print(prompt_tokens)
     decoded_prompt = tokenizer.decode(prompt_tokens)

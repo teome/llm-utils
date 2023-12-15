@@ -82,9 +82,6 @@ class Message(TypedDict):
     content: str
 
 
-Dialog = List[Message]
-
-
 class LlamaPrompt:
     B_INST = "[INST]"
     E_INST = "[/INST]"
@@ -96,7 +93,7 @@ class LlamaPrompt:
     @classmethod
     def chat_completion(
         cls,
-        dialogs: List[Dialog],
+        messages: List[Message],
         tokenizer: Tokenizer,
     ) -> List[int]:
         """
@@ -129,51 +126,49 @@ class LlamaPrompt:
         SPECIAL_TAGS = cls.SPECIAL_TAGS
         UNSAFE_ERROR = cls.UNSAFE_ERROR
 
-        prompt_tokens = []
         unsafe_requests = []
-        for dialog in dialogs:
-            unsafe_requests.append(
-                any([tag in msg["content"] for tag in SPECIAL_TAGS for msg in dialog])
-            )
-            if dialog[0]["role"] == "system":
-                dialog = [
-                    {
-                        "role": dialog[1]["role"],
-                        "content": B_SYS
-                        + dialog[0]["content"]
-                        + E_SYS
-                        + dialog[1]["content"],
-                    }
-                ] + dialog[2:]
-            assert all([msg["role"] == "user" for msg in dialog[::2]]) and all(
-                [msg["role"] == "assistant" for msg in dialog[1::2]]
-            ), (
-                "model only supports 'system', 'user' and 'assistant' roles, "
-                "starting with 'system', then 'user' and alternating (u/a/u/a/u...)"
-            )
-            dialog_tokens: List[int] = sum(
-                [
-                    tokenizer.encode(
-                        f"{B_INST} {(prompt['content']).strip()} {E_INST} {(answer['content']).strip()} ",
-                        bos=True,
-                        eos=True,
-                    )
-                    for prompt, answer in zip(
-                        dialog[::2],
-                        dialog[1::2],
-                    )
-                ],
-                [],
-            )
-            assert (
-                dialog[-1]["role"] == "user"
-            ), f"Last message must be from user, got {dialog[-1]['role']}"
-            dialog_tokens += tokenizer.encode(
-                f"{B_INST} {(dialog[-1]['content']).strip()} {E_INST}",
-                bos=True,
-                eos=False,
-            )
-            prompt_tokens.append(dialog_tokens)
-        return prompt_tokens
+        unsafe_requests.append(
+            any([tag in msg["content"] for tag in SPECIAL_TAGS for msg in messages])
+        )
+        if messages[0]["role"] == "system":
+            messages = [
+                Message({
+                    "role": messages[1]["role"],
+                    "content": B_SYS
+                    + messages[0]["content"]
+                    + E_SYS
+                    + messages[1]["content"],
+                })
+            ] + messages[2:]
+        assert all([msg["role"] == "user" for msg in messages[::2]]) and all(
+            [msg["role"] == "assistant" for msg in messages[1::2]]
+        ), (
+            "model only supports 'system', 'user' and 'assistant' roles, "
+            "starting with 'system', then 'user' and alternating (u/a/u/a/u...)"
+        )
+        messages_tokens: List[int] = sum(
+            [
+                tokenizer.encode(
+                    f"{B_INST} {(prompt['content']).strip()} {E_INST} {(answer['content']).strip()} ",
+                    bos=True,
+                    eos=True,
+                )
+                for prompt, answer in zip(
+                    messages[::2],
+                    messages[1::2],
+                )
+            ],
+            [],
+        )
+        assert (
+            messages[-1]["role"] == "user"
+        ), f"Last message must be from user, got {messages[-1]['role']}"
+        messages_tokens += tokenizer.encode(
+            f"{B_INST} {(messages[-1]['content']).strip()} {E_INST}",
+            bos=True,
+            eos=False,
+        )
+        return messages_tokens
+
 
 
