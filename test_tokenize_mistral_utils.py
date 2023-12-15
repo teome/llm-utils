@@ -1,35 +1,40 @@
 from typing import List, Dict
 import pytest
+from transformers import AutoTokenizer
 
 from tokenize_mistral_utils import MistralPrompt, Tokenizer
 
 @pytest.fixture
-def tokenizer():
+def tokenizer_sentencepiece():
     return Tokenizer(model_path="models/mistralai/Mixtral-8x7B-Instruct-v0.1/tokenizer.model")
 
+
 @pytest.fixture
-def hf_tokenizer():
-    from transformers import AutoTokenizer
-    # return AutoTokenizer.from_pretrained("mistralai/Mixtral-8x7B-Instruct-v0.1")
-    return AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.2")
+def tokenizer_hf():
+    return AutoTokenizer.from_pretrained("mistralai/Mixtral-8x7B-Instruct-v0.1")
 
-def test_enc_user_assistant(tokenizer, hf_tokenizer):
-    messages: List[Dict] = [
-        {"role": "user", "content": "What is your favourite condiment?"},
-        {"role": "assistant", "content": "Well, I'm quite partial to a good squeeze of fresh lemon juice. It adds just the right amount of zesty flavour to whatever I'm cooking up in the kitchen!"},
-        {"role": "user", "content": "Do you have mayonnaise recipes?"},]
+messages = [
+    {"role": "user", "content": "2+2"},
+    {"role": "assistant", "content": "4!"},
+    {"role": "user", "content": "+2"},
+    {"role": "assistant", "content": "6!"},
+    {"role": "user", "content": "+4"},
+]
+expected_tok_ids = [1, 733, 16289, 28793, 28705, 28750, 28806, 28750, 733, 28748, 16289, 28793, 28705, 28781, 28808, 2, 733, 16289, 28793, 648, 28750, 733, 28748, 16289, 28793, 28705, 28784, 28808, 2, 733, 16289, 28793, 648, 28781, 733, 28748, 16289, 28793]
+expected_tok_ids_to_tokens = ['<s>', '▁[', 'INST', ']', '▁', '2', '+', '2', '▁[', '/', 'INST', ']', '▁', '4', '!', '</s>', '▁[', 'INST', ']', '▁+', '2', '▁[', '/', 'INST', ']', '▁', '6', '!', '</s>', '▁[', 'INST', ']', '▁+', '4', '▁[', '/', 'INST', ']']
 
-    prompt_tokens = MistralPrompt.chat_completion([messages], tokenizer)[0]
-    hf_prompt_tokens = hf_tokenizer.apply_chat_template(messages)
-    assert prompt_tokens == hf_prompt_tokens, "Encoded rompt tokens are different"
+def test_encode_instruct_hf(tokenizer_hf):
+    encoded = MistralPrompt.encode_instruct_hf(messages, tokenizer_hf)
+    assert encoded == expected_tok_ids
+    assert tokenizer_hf.convert_ids_to_tokens(encoded) == expected_tok_ids_to_tokens
 
-def test_enc_dec_user_assistant(tokenizer):
-    messages: List[Dict] = [
-        {"role": "user", "content": "What is your favourite condiment?"},
-        {"role": "assistant", "content": "Well, I'm quite partial to a good squeeze of fresh lemon juice. It adds just the right amount of zesty flavour to whatever I'm cooking up in the kitchen!"},
-        {"role": "user", "content": "Do you have mayonnaise recipes?"},]
+def test_encode_instruct_sentencepiece(tokenizer_sentencepiece):
+    encoded = MistralPrompt.encode_instruct_mistral(messages, tokenizer_sentencepiece)
+    assert encoded == expected_tok_ids
+    assert tokenizer_sentencepiece._model.id_to_piece(encoded) == expected_tok_ids_to_tokens
 
-    expected_prompt = "[INST] What is your favourite condiment? [/INST] Well, I'm quite partial to a good squeeze of fresh lemon juice. It adds just the right amount of zesty flavour to whatever I'm cooking up in the kitchen!  [INST] Do you have mayonnaise recipes? [/INST]"
-    prompt_tokens = MistralPrompt.chat_completion([messages], tokenizer)[0]
-    decoded_prompt = tokenizer.decode(prompt_tokens)
-    assert decoded_prompt == expected_prompt, "Decoded prompt strings are different"
+def test_encode_instruct_system_tags(tokenizer_hf, tokenizer_sentencepiece):
+    messages_with_system = [{"role": "system", "content": "Hello"}] + messages
+    encoded_hf = MistralPrompt.encode_instruct_hf(messages_with_system, tokenizer_hf, include_system_tags=True)
+    encoded_sentencepiece = MistralPrompt.encode_instruct_mistral(messages_with_system, tokenizer_sentencepiece, include_system_tags=True)
+    assert encoded_hf == encoded_sentencepiece

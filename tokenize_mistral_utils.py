@@ -8,7 +8,7 @@
 # user message. There's also whitespace gotchas to watch out for.
 
 from pathlib import Path
-from typing import Any, List, Union
+from typing import Any, Dict, List, Union
 
 from sentencepiece import SentencePieceProcessor
 
@@ -208,7 +208,7 @@ class MistralPrompt(LlamaPrompt):
 # Code given by Mistral team during discussion of the formatting issues with OSS libs
 def _mistral_team_ref_build_prompt(
     messages: List[Dict[str, str]],
-    tokenizer: AutoTokenizer,
+    tokenizer,
 ):
     prompt = ""
     for i, msg in enumerate(messages):
