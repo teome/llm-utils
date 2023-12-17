@@ -102,8 +102,8 @@ class MistralPrompt(LlamaPrompt):
         e_sys = cls.E_SYS if include_system_tags else "\n\n"
 
         if isinstance(tokenizer, Tokenizer):
-            return cls.encode_mistral(messages, tokenizer, include_system_tags=include_system_tags)
-        return cls.encode_hf(messages, tokenizer, include_system_tags=include_system_tags)
+            return cls.encode_instruct_mistral(messages, tokenizer, include_system_tags=include_system_tags)
+        return cls.encode_instruct_hf(messages, tokenizer, include_system_tags=include_system_tags)
 
     @classmethod
     def merge_system_user_messages(cls, messages: List[Message], include_system_tags: bool = False):
