@@ -53,57 +53,57 @@ class Tokenizer:
 class MistralPrompt(LlamaPrompt):
     @classmethod
     def encode_instruct(
-            cls,
-            messages: List[Message],
-            tokenizer: Union[Tokenizer, Any],
-            include_system_tags: bool = False,
-        ) -> List[int]:
-            """
-            Generate assistant responses for a list of conversational dialogs using the language generation model.
+        cls,
+        messages: List[Message],
+        tokenizer: Union[Tokenizer, Any],
+        include_system_tags: bool = False,
+    ) -> List[int]:
+        """
+        Generate assistant responses for a list of conversational dialogs using the language generation model.
 
-            Can be called as a static method, but the tokenizer must be passed in that case
+        Can be called as a static method, but the tokenizer must be passed in that case
 
-            Args:
-                messages (List[Message]): List of conversational messages, where each message is a (typed) dict of
-                    `{'role': role, 'content': content}`.
-                tokenizer (Union[Tokenizer, Any]): Tokenizer to use for encoding the prompt. Can be either the Tokenizer
-                    class from this module (based on SentencePiece) or an AutoTokenizer from HuggingFace for the model.
-                include_system_tags (bool): Whether to include the system tags in the prompt. Default False given that
-                    the reference prompts from Mistral don't use them.
+        Args:
+            messages (List[Message]): List of conversational messages, where each message is a (typed) dict of
+                `{'role': role, 'content': content}`.
+            tokenizer (Union[Tokenizer, Any]): Tokenizer to use for encoding the prompt. Can be either the Tokenizer
+                class from this module (based on SentencePiece) or an AutoTokenizer from HuggingFace for the model.
+            include_system_tags (bool): Whether to include the system tags in the prompt. Default False given that
+                the reference prompts from Mistral don't use them.
 
-            Returns:
-                List[int]: List of encoded prompt tokens.
+        Returns:
+            List[int]: List of encoded prompt tokens.
 
-            Raises:
-                AssertionError: If the last message in the messages is not from the user.
-                AssertionError: If the message roles are not in the required 'user', 'assistant', and optional 'system' order.
+        Raises:
+            AssertionError: If the last message in the messages is not from the user.
+            AssertionError: If the message roles are not in the required 'user', 'assistant', and optional 'system' order.
 
-            Note:
-                This method generates tokens based on the instruct template from Mistral. Each list of messages is can start
-                with a system message, followed by a user message, and then alternating user and assistant messages. The
-                system message is optional, but if it is included, it must be the first message in the list. The last
-                message must be from the user. The messages are then encoded into tokens using the instruct template.
+        Note:
+            This method generates tokens based on the instruct template from Mistral. Each list of messages is can start
+            with a system message, followed by a user message, and then alternating user and assistant messages. The
+            system message is optional, but if it is included, it must be the first message in the list. The last
+            message must be from the user. The messages are then encoded into tokens using the instruct template.
 
-                It is only slightly different from the Llama prompt in that the BOS tokens are only added to the start of
-                the first message, whereas the EOS are added to the end of each assistant response message. Why did
-                they do this?
+            It is only slightly different from the Llama prompt in that the BOS tokens are only added to the start of
+            the first message, whereas the EOS are added to the end of each assistant response message. Why did
+            they do this?
 
-                Depending on the tokenizer class passed in, subtly different logic has to be used to deal with encoding
-                differences. Handling of the resulting tokens by the model is the same regardless of using HF or
-                reference PyTorch implementation
-            """
-            # could just reference them via the class, but redefine here for clarity and to keep the rest of the code the same
-            B_INST = cls.B_INST
-            E_INST = cls.E_INST
-            SPECIAL_TAGS = cls.SPECIAL_TAGS
-            UNSAFE_ERROR = cls.UNSAFE_ERROR
+            Depending on the tokenizer class passed in, subtly different logic has to be used to deal with encoding
+            differences. Handling of the resulting tokens by the model is the same regardless of using HF or
+            reference PyTorch implementation
+        """
+        # could just reference them via the class, but redefine here for clarity and to keep the rest of the code the same
+        B_INST = cls.B_INST
+        E_INST = cls.E_INST
+        SPECIAL_TAGS = cls.SPECIAL_TAGS
+        UNSAFE_ERROR = cls.UNSAFE_ERROR
 
-            b_sys = cls.B_SYS if include_system_tags else ""
-            e_sys = cls.E_SYS if include_system_tags else "\n\n"
+        b_sys = cls.B_SYS if include_system_tags else ""
+        e_sys = cls.E_SYS if include_system_tags else "\n\n"
 
-            if isinstance(tokenizer, Tokenizer):
-                return cls.encode_mistral(messages, tokenizer, include_system_tags=include_system_tags)
-            return cls.encode_hf(messages, tokenizer, include_system_tags=include_system_tags)
+        if isinstance(tokenizer, Tokenizer):
+            return cls.encode_mistral(messages, tokenizer, include_system_tags=include_system_tags)
+        return cls.encode_hf(messages, tokenizer, include_system_tags=include_system_tags)
 
     @classmethod
     def merge_system_user_messages(cls, messages: List[Message], include_system_tags: bool = False):
