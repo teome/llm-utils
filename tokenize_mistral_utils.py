@@ -59,7 +59,7 @@ class MistralPrompt(LlamaPrompt):
         include_system_tags: bool = False,
     ) -> List[int]:
         """
-        Generate assistant responses for a list of conversational dialogs using the language generation model.
+        Generate assistant responses for a list of conversational messages using the language generation model.
 
         Can be called as a static method, but the tokenizer must be passed in that case
 
@@ -139,10 +139,10 @@ class MistralPrompt(LlamaPrompt):
     @classmethod
     def encode_instruct_mistral(cls, messages: List[Message], tokenizer: Tokenizer, include_system_tags: bool = False):
         """
-        Encode a dialog into a prompt for Mistral.
+        Encode a list of messages into a prompt for Mistral.
 
         Args:
-            dialog (List[Message]): Dialog to encode.
+            messages (List[Message]): Dialog to encode.
             tokenizer (Tokenizer): Tokenizer to use for encoding. Expected to be the Mistral tokenizer which itself
                 is based on SentencePiece.
             include_system_tags (bool): Whether to include the system tags in the prompt. Default False given that
