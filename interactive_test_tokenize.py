@@ -1,5 +1,5 @@
 # %%[markdown]
-# # Experimentation and testing of prompt formatting with tokenizer for llama and mistral models
+# # Experimentation and testing of prompt formatting with tokenizer for Mistral and Llama models
 
 # %%
 
@@ -13,12 +13,6 @@ import tokenize_mistral_utils
 from tokenize_mistral_utils import MistralPrompt
 
 # %%
-
-# messages: List[tokenize_llama_utils.Message] = [
-#     {"role": "user", "content": "What is your favourite condiment?"},
-#     {"role": "assistant", "content": "Well, I'm quite partial to a good squeeze of fresh lemon juice. It adds just the right amount of zesty flavour to whatever I'm cooking up in the kitchen!"},
-#     {"role": "user", "content": "Do you have mayonnaise recipes?"},]
-
 messages = [
     {"role": "user", "content": "2+2"},
     {"role": "assistant", "content": "4!"},
@@ -220,14 +214,12 @@ print('\n\n***All tests passed***\n\n')
 
 
 
-
-
-
+#################################################################################
 # %%[markdown] ##################################################################
+
 # ## Llama LLamaPrompt class testing
 
 # %%
-
 tokenizer = tokenize_llama_utils.Tokenizer(model_path="models/meta-llama/Llama-2-7b-chat/tokenizer.model")
 print(tokenizer.bos_id, tokenizer.eos_id, tokenizer.pad_id)
 print(tokenizer.decode([tokenizer.bos_id, tokenizer.eos_id,]))
@@ -236,24 +228,24 @@ llama_prompt = tokenize_llama_utils.LlamaPrompt
 prompt_tokens = llama_prompt.encode_instruct(messages, tokenizer)
 print('MetaAI implementation sentencpiece tokenizer')
 print(prompt_tokens)
-print(tokenizer.decode(prompt_tokens[0]))
+print(tokenizer.decode(prompt_tokens))
 
+# %%[markdown]
+# Quick test to show that sentencepiece shouldn't be given special tags (bos/eos) in strings.
+# This is what HF seems to do to construct a complete string with multiple messages, but their
+# implementation/tokenizer handles it correctly
 # %%
-# Quick test to see equivalence. Note that using the sentencepiece tokenizer directly we
-# get a different result. It's not expecting special bos/eos tokens as strings
-text = "<s> [INST] What is your favourite condiment? [/INST] " \
-"Well, I'm quite partial to a good squeeze of fresh lemon juice. It adds just the right amount of zesty flavour to whatever I'm cooking up in the kitchen!  </s>" \
-"<s> [INST] Do you have mayonnaise recipes? [/INST] "
-
+text = "<s>[INST] 2+2 [/INST] 4! </s><s>[INST] +2 [/INST] 6! </s><s>[INST] +4 [/INST] "
 prompt_tokens = tokenizer.encode(text, bos=False, eos=False)
 print(prompt_tokens)
 print('HF implementation tokenizer and chat template from raw string')
 print(f'Input text:\n{text}\n')
-print(print(f'Output text:\n{tokenizer.decode(prompt_tokens)}'))
+print(f'Output text:\n{tokenizer.decode(prompt_tokens)}')
 
+# %%[markdown]
+# Now, use the HF tokenization and chat_template, which gives the same result as sentencepiece with
+# encoding for each message or pair of messages
 # %%
-# for comparison, look at the same but with HF tokenizer -- Note we have to use the HF tokenizer to get chat template
-
 hf_tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf")
 print(hf_tokenizer.bos_token_id, hf_tokenizer.eos_token_id, hf_tokenizer.pad_token_id)
 print('HF implementation tokenizer and chat template from messages list of dicts')
@@ -263,17 +255,12 @@ hf_prompt_tokens = hf_tokenizer.apply_chat_template(messages)
 print(hf_prompt_tokens)
 print(hf_tokenizer.decode(hf_prompt_tokens, skip_special_tokens=True))
 
-
-
-###################################################
 # %%[markdown]
-
 # ### Direct comparison on tokenization and decoding
 # %%
-
 print('Compare tokenized prompts and decoded strings token by token\n')
 
-prompt_tokens = LlamaPrompt.chat_completion([messages], tokenizer)[0]
+prompt_tokens = LlamaPrompt.encode_instruct(messages, tokenizer)
 print('MetaAI implementation sentencpiece tokenizer from messages list of dicts')
 print(prompt_tokens)
 decoded_prompt = tokenizer.decode(prompt_tokens)
@@ -300,3 +287,5 @@ else:
     print(f'HF decoded prompt:\n{hf_decoded_prompt}')
     assert decoded_prompt == hf_decoded_prompt, 'Decoded prompts are different'
 
+
+# %%
