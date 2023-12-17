@@ -3,13 +3,14 @@
 # This software may be used and distributed according to the terms of the Llama 2 Community License Agreement.
 import os
 from logging import getLogger
-from typing import Callable, Dict, List, Literal, Optional, TypedDict
+from typing import Any, Dict, List, Literal, TypedDict, Union
 
 from sentencepiece import SentencePieceProcessor
 
-# largely copied and adapted from MetaAI llama repo and Mistral docs.
+# largely copied and adapted from MetaAI llama repo
 # Avoid the need for transformers and the llama repo given that it's just sentencepiece
-# and this avoids any issues with bad formatting of the prompts that's common
+# and this avoids any issues with bad formatting of the prompts that's common.
+# Still provide the option to use the HF tokenizer and it's chat_templating
 # https://github.com/facebookresearch/llama/blob/main/llama/generation.py#L284
 
 
@@ -91,32 +92,46 @@ class LlamaPrompt:
     UNSAFE_ERROR = "Error: special tags are not allowed as part of the prompt."
 
     @classmethod
-    def encode_instruct(
-        cls,
-        messages: List[Message],
-        tokenizer: Tokenizer,
-    ) -> List[int]:
+    def encode_instruct(cls, messages: List[Message], tokenizer: Union[Tokenizer, Any]) -> List[int]:
         """
-        Generate assistant responses for a list of conversational dialogs using the language generation model.
+        Generate assistant responses for a list of conversational messages using the language generation model.
 
         Can be called as a static method, but the tokenizer must be passed in that case
 
         Args:
-            dialogs (List[Dialog]): List of conversational dialogs, where each dialog is a list of messages.
-            tokenizer Tokenizer: Tokenizer to use for encoding the prompt. Underlying tokenizer is based on
-                SentencePiece.
+            messages (List[Dialog]): List of conversational messages, where each message is a (typed) dict of
+                `{'role': role, 'content': content}`.
+            tokenizer (Union[Tokenizer, Any]): Tokenizer to use for encoding the prompt. Can be either the Tokenizer
+                class from this module (based on SentencePiece) or an AutoTokenizer from HuggingFace for the model.
 
         Returns:
             List[Int]: List of encoded tokens for instruct models.
 
         Raises:
-            AssertionError: If the last message in a dialog is not from the user.
-            AssertionError: If the dialog roles are not in the required 'user', 'assistant', and optional 'system' order.
+            AssertionError: If the last message in a messages is not from the user.
+            AssertionError: If the messages roles are not in the required 'user', 'assistant', and optional 'system' order.
 
         Note:
             This method generates chat assistant prompt tokens from a list of messages. Each list of messages is can start
             with a system message, followed by a user message, and alternating between user and assistant messages.
-            The last message in a dialog must be from the user
+            The last message must be from the user
+        """
+        if isinstance(tokenizer, Tokenizer):
+            return cls.encode_instruct_llama(messages, tokenizer)
+        return cls.encode_instruct_hf(messages, tokenizer)
+
+    @classmethod
+    def encode_instruct_llama(cls, messages: List[Message], tokenizer: Tokenizer) -> List[int]:
+        """
+        Encode a list of messages into a prompt for Llama instruct models.
+
+        Args:
+            messages (List[Message]): Dialog to encode.
+            tokenizer (Tokenizer): Tokenizer to use for encoding. Expected to be the Llama tokenizer which itself
+                is based on SentencePiece.
+
+        Returns:
+            List[int]: Encoded prompt tokens.
         """
         # could just reference them via the class, but redefine here for clarity and to keep the rest of the code the same
         B_INST = cls.B_INST
@@ -170,5 +185,20 @@ class LlamaPrompt:
         )
         return messages_tokens
 
+    @classmethod
+    def encode_instruct_hf(cls, messages: List[Message], tokenizer):
+        """
+        Encode a list of role/content messages to tokens using a HuggingFace tokenizer instantiated
+        for the desired Llama (or compatible) model.
 
+        Args:
+            messages (List[Message]): Dialog to encode.
+            tokenizer: Tokenizer to use for encoding. Tokenizer must be instance of HF AutoTokenizer.
+
+        Returns:
+            List[int]: Encoded prompt tokens.
+        """
+        # KISS and just use the chat_template from HF/Meta as there doesn't seem to be any difference
+        # as opposed to the Mistral implementation
+        return tokenizer.apply_chat_template(messages)
 
