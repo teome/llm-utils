@@ -51,7 +51,7 @@ def openai_chat_completions_create(
     client=None,
     api_key=None,
     base_url=None,
-    max_tokens=50,
+    max_tokens=1024,
     temperature=0.8,
     return_response=False,
     timeout=None,
@@ -174,5 +174,5 @@ def openai_http_api_request(
         response = requests.request(method=method, url=url, headers=headers, json=json_data, params=params, timeout=timeout)
         response.raise_for_status()  # Raise an HTTPError if the HTTP request returned an unsuccessful status code
         return response
-    
+
     return req()
