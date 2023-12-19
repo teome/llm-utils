@@ -4,7 +4,7 @@ Conversation prompt templates.
 Heavily inspired and partly copied from fastchat/vLLM approach
 https://github.com/lm-sys/FastChat/blob/main/fastchat/conversation.py
 
-TODO consider just using the library if more of its functionality is needed
+TODO consider just using either HF or fastchat.
 
 Mistral-Instruct format
 <s>[INST] Instruction [/INST] Model answer</s>[INST] Follow-up instruction [/INST]
@@ -15,11 +15,17 @@ As reference, here is the format used to tokenize instructions during fine-tunin
  …
  tok("[INST]") + tok(USER_MESSAGE_N) + tok("[/INST]") +
  tok(BOT_MESSAGE_N) + [END_SYMBOL_ID]
-NOTE The function tok should never generate the EOS token, however FastChat (used in vLLM)
-sends the full prompt as a string which might lead to incorrect tokenization of the EOS token
-and prompt injection. Users are encouraged to send tokens instead as described above.
-NOTE Maybe just what everyone else does and encode the special tokens in the prompt string. HF and vLLM do this
 
+NB it's advised to use the tokenizer for individual messages, and also for the bos/eos tokens.
+However, most OSS libraries don't do this, and instead the concatenate strings with the bos/eos tokens
+and with multi-message prompts.
+When using local models, or using vLLM without chat API, use tokenization directly if possible.
+See utility functions in this repo for Mistral and Llama and use these instead.
+
+If this isn't an option, rather than inventing yet another way of doing this, it might be better to just
+go with HF and their chat templating, as that's what most will be using so it's at least compatible.
+
+Complications come from the following issues:
 NB need to add bos and eos tokens from tokenizer, not encoded in the prompt string then tokenized
 <s>[INST] <<SYS>> <system prompt> <</SYS>> <user prompt> [/INST] <response> </s>
 TODO only add </s> as a token directly after a assistant response, not after a user prompt,
@@ -40,7 +46,7 @@ https://github.com/facebookresearch/llama/blob/1a240688810f8036049e8da36b073f63d
 """
 
 from dataclasses import dataclass, field
-from typing import List, Any, Dict, Union, Tuple
+from typing import List, Dict, Union, Tuple
 
 
 class _BColors:
@@ -249,7 +255,27 @@ register_conv_template(
         messages=[],
         offset=0,
         stop_str="</s>",
-        stop_token_ids=None,
+        stop_token_ids=[2],
+    )
+)
+
+register_conv_template(
+    Conversation(
+        name="mistral-system-tags",
+        roles=("system", "user", "assistant"),
+        roles_templates={
+            "system": "<<SYS>>\n{}\n<</SYS>>\n\n",
+            "user": "[INST] {} [/INST]",
+            "assistant": " {}</s>",
+        },
+        generator_str="",
+        system_in_user=True,
+        messages=[],
+        offset=0,
+        # Note: no need to add this as a start string because the HF tokenizer will do it
+        # start_str="<s>",
+        stop_str="</s>",
+        stop_token_ids=[2],
     )
 )
 
@@ -258,20 +284,20 @@ register_conv_template(
         name="mistral",
         roles=("system", "user", "assistant"),
         roles_templates={
-            "system": "<<SYS>>\n{}\n<</SYS>>\n\n",
+            "system": "{}\n\n",
             "user": "[INST] {} [/INST]",
-            "assistant": " {} </s>",
+            "assistant": " {}</s>",
         },
-        generator_str=" ",
+        generator_str="",
         system_in_user=True,
         messages=[],
         offset=0,
-        start_str="<s>",
+        # Note: no need to add this as a start string because the tokenizer will do it
+        # start_str="<s>",
         stop_str="</s>",
-        stop_token_ids=None,
+        stop_token_ids=[2],
     )
 )
-
 
 # Standard chatml format
 # """
