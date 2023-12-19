@@ -6,7 +6,7 @@ from transformers import AutoTokenizer
 import conversation
 from endpoint_utils import (
     OpenAI, openai_chat_completions_create, openai_extract_chat_completion_message,
-    prepare_http_request_json, openai_http_api_request)
+    prepare_http_request_json, rest_api_request)
 
 # %%
 initial_messages = [
@@ -90,7 +90,7 @@ conv.messages = initial_messages
 json_data = prepare_http_request_json(messages=conv.messages, model=MODEL,)
 
 # %%
-request = openai_http_api_request(url="https://api.openai.com/v1/chat/completions", json_data=json_data, timeout=60)
+request = rest_api_request(url="https://api.openai.com/v1/chat/completions", json_data=json_data, timeout=60)
 # %%
 print(request.json())
 req_json = request.json()["choices"][0]

@@ -130,7 +130,7 @@ def prepare_http_request_json(
     return json_data
 
 
-def openai_http_api_request(
+def rest_api_request(
         url,
         json_data=None,
         api_key=None,
@@ -143,7 +143,7 @@ def openai_http_api_request(
         backoff=2,
         ):
     """
-    Make an HTTP request to the specified URL using the requests library.
+    Make a REST API request to the specified URL using the requests library.
 
     Args:
         url (str): The URL to which the request is to be made.
