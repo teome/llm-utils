@@ -212,6 +212,23 @@ print('\n\n***All tests passed***\n\n')
 #%%
 
 
+# %%[markdown]
+# ### Comparison with our Conversation class
+# Make sure we're getting the same tokens and strings from the Conversation class formatting
+# %%
+import conversation
+conv_mistral = conversation.get_conv_template('mistral')
+print(conv_mistral)
+conv_mistral.append_messages(messages)
+print(conv_mistral.get_prompt())
+conv_mistral_token_ids = hf_tok.encode(conv_mistral.get_prompt())
+conv_mistral_token_str = hf_tok.convert_ids_to_tokens(conv_mistral_token_ids)
+print(mistral_ref_token_str)
+print(conv_mistral_token_str)
+print(hf_tok.decode(mistral_ref_token_ids, skip_special_tokens=True))
+print(hf_tok.decode(conv_mistral_token_ids, skip_special_tokens=True))
+# %%
+
 
 
 #################################################################################
@@ -289,3 +306,25 @@ else:
 
 
 # %%
+
+
+
+
+
+
+
+
+#################################################################################
+# %%
+hf_tokens = hf_tok.tokenize('hello world, abc', add_special_tokens=True, )
+hf_ids = hf_tok.convert_tokens_to_ids(hf_tokens)
+hf_tokens2 = hf_tok.convert_ids_to_tokens(hf_ids)
+print(hf_tokens, hf_ids, hf_tokens2)
+
+#  %%
+mistral_ref_token_ids, mistral_ref_token_str = build_prompt(messages, hf_tok)
+print(mistral_ref_token_ids)
+print(mistral_ref_token_str)
+print(hf_tok.decode(mistral_ref_token_ids, skip_special_tokens=True))
+print(hf_tok.decode(mistral_ref_token_ids, skip_special_tokens=False))
+
