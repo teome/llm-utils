@@ -1,5 +1,6 @@
 """Utility functions for interacting with the OpenAI API >=v1 and other endpoints"""
 from functools import wraps
+import json
 import os
 import time
 from warnings import warn
@@ -141,6 +142,7 @@ def rest_api_request(
         max_retries=3,
         delay=1,
         backoff=2,
+        stream=False,
         ):
     """
     Make a REST API request to the specified URL using the requests library.
@@ -171,8 +173,33 @@ def rest_api_request(
         exceptions=(requests.exceptions.RequestException,),
     )
     def req():
-        response = requests.request(method=method, url=url, headers=headers, json=json_data, params=params, timeout=timeout)
+        response = requests.request(method=method, url=url, headers=headers, json=json_data, params=params, timeout=timeout, stream=stream)
         response.raise_for_status()  # Raise an HTTPError if the HTTP request returned an unsuccessful status code
         return response
 
     return req()
+
+
+def iterate_streaming_response(response: requests.Response):
+    if response.status_code == 200:
+        for chunk in response.iter_lines(chunk_size=8192, delimiter=b"\0", decode_unicode=False):
+            if chunk:
+                # Decode the chunk to UTF-8
+                decoded_chunk = json.loads(chunk.decode("utf-8"))
+                # Process the decoded chunk here
+                yield decoded_chunk
+            else:
+                # Handle the case where the chunk is empty
+                raise ValueError("Unexpected empty chunk")
+    else:
+        # Handle the response not being OK
+        raise requests.exceptions.HTTPError(f"Request failed with status code {response.status_code}")
+
+
+def get_response(response: requests.Response):
+    """Get the response from a requests.Response object"""
+    if response.status_code == 200:
+        return response.json()
+
+    # Handle the response not being OK
+    raise requests.exceptions.HTTPError(f"Request failed with status code {response.status_code}")
