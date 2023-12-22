@@ -25,9 +25,10 @@ def main(
         elif "openai" in url:
             api_key = os.getenv("OPENAI_API_KEY")
         else:
-            raise ValueError("No api key provide or available from defaults (together, openai)")
+            print("No api key provide or available from defaults (together, openai), trying empty value")
+            api_key = ""
 
-    if "together" in url or "vllm" in url:
+    if "together" in url or "chat" not in url:
         json_data = {
             "model": model,
             "temperature": temperature,
@@ -40,7 +41,7 @@ def main(
             json_data["stop"] = ["</s>", "[/INST]"]
         else:
             json_data["prompt"] = prompt
-    elif "openai" in url:
+    elif "openai" in url or "chat" in url:
         json_data = {
             "messages": [{"role": "user", "content": prompt},],
             "model": model,
