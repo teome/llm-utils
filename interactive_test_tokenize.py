@@ -328,3 +328,18 @@ print(mistral_ref_token_str)
 print(hf_tok.decode(mistral_ref_token_ids, skip_special_tokens=True))
 print(hf_tok.decode(mistral_ref_token_ids, skip_special_tokens=False))
 
+
+# %%
+hf_ids = hf_tok.apply_chat_template(messages)
+hf_tokens = hf_tok.convert_ids_to_tokens(hf_ids)
+hf_ids2 = hf_tok.convert_tokens_to_ids(hf_tokens)
+print(hf_ids)
+print(hf_tokens)
+print(hf_ids2)
+
+print(hf_tok.decode(hf_ids, skip_special_tokens=False))
+mistral_ref_token_ids, mistral_ref_token_str = build_prompt(messages, hf_tok)
+print(mistral_ref_token_ids)
+print(mistral_ref_token_str)
+print(hf_tok.decode(mistral_ref_token_ids, skip_special_tokens=False))
+# %%
