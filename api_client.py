@@ -55,19 +55,25 @@ def main(
         api_key=api_key,
         json_data=json_data,
         stream=stream,
+        timeout=60,
     )
 
-    if "together" in url or "vllm" in url:
-        client = sseclient.SSEClient(response)
-        for event in client.events():
+    client = sseclient.SSEClient(response)
+    for event in client.events():
+        partial_result = json.loads(event.data)
+        if "together" in url or "vllm" in url:
             if event.data == "[DONE]":
+                print()
                 break
 
-            partial_result = json.loads(event.data)
             token = partial_result["choices"][0]["text"]
-            print(token, end="", flush=True)
-    elif "openai" in url:
-        raise NotImplementedError("OpenAI streaming not implemented")
+        elif "openai" in url:
+            if partial_result["choices"][0]["finish_reason"] is not None:
+                print()
+                break
+            token = partial_result["choices"][0]["delta"]["content"]
+
+        print(token, end="", flush=True)
 
 
 if __name__ == '__main__':
