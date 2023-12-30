@@ -3,8 +3,8 @@ from typing import List
 
 from transformers import AutoTokenizer
 
-import conversation
-from endpoint_utils import (
+from llm_utils import conversation
+from llm_utils.endpoint_utils import (
     OpenAI, openai_chat_completions_create, openai_extract_chat_completion_message,
     prepare_http_request_json, rest_api_request)
 

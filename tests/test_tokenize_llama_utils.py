@@ -1,19 +1,8 @@
 from typing import List
 import pytest
-
-import tokenize_llama_utils
-from tokenize_llama_utils import Tokenizer, LlamaPrompt
-
-@pytest.fixture
-def tokenizer():
-    return Tokenizer(model_path="models/meta-llama/Llama-2-7b-chat/tokenizer.model")
-
-
-from typing import List, Dict
-import pytest
 from transformers import AutoTokenizer
 
-from tokenize_llama_utils import LlamaPrompt, Tokenizer
+from llm_utils.tokenize_llama_utils import LlamaPrompt, Tokenizer
 
 @pytest.fixture
 def tokenizer_sentencepiece():

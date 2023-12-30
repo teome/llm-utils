@@ -1,5 +1,8 @@
+import os
+import sys
 import pytest
-from conversation import Conversation, get_conv_template, register_conv_template, conv_templates
+
+from llm_utils.conversation import Conversation, get_conv_template, register_conv_template, conv_templates
 
 @pytest.fixture
 def conversation_llama_2():

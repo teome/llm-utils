@@ -7,10 +7,10 @@ from typing import List, Dict
 
 from transformers import AutoTokenizer
 
-import tokenize_llama_utils
-from tokenize_llama_utils import LlamaPrompt
-import tokenize_mistral_utils
-from tokenize_mistral_utils import MistralPrompt
+from llm_utils import tokenize_llama_utils
+from llm_utils.tokenize_llama_utils import LlamaPrompt
+from llm_utils import tokenize_mistral_utils
+from llm_utils.tokenize_mistral_utils import MistralPrompt
 
 # %%
 messages = [

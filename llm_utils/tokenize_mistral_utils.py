@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Union
 
 from sentencepiece import SentencePieceProcessor
 
-from tokenize_llama_utils import LlamaPrompt, Message
+from llm_utils.tokenize_llama_utils import LlamaPrompt, Message
 
 
 class Tokenizer:

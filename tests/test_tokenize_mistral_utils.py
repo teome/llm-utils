@@ -1,8 +1,7 @@
-from typing import List, Dict
 import pytest
 from transformers import AutoTokenizer
 
-from tokenize_mistral_utils import MistralPrompt, Tokenizer
+from llm_utils.tokenize_mistral_utils import MistralPrompt, Tokenizer
 
 @pytest.fixture
 def tokenizer_sentencepiece():

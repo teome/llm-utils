@@ -3,7 +3,7 @@ import openai
 
 from dotenv import load_dotenv
 
-from endpoint_utils import openai_chat_completions_create
+from llm_utils.endpoint_utils import openai_chat_completions_create
 
 load_dotenv()
 

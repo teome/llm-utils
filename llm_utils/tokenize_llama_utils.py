@@ -3,7 +3,7 @@
 # This software may be used and distributed according to the terms of the Llama 2 Community License Agreement.
 import os
 from logging import getLogger
-from typing import Any, Dict, List, Literal, TypedDict, Union
+from typing import Any, List, Literal, TypedDict, Union
 
 from sentencepiece import SentencePieceProcessor
 

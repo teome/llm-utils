@@ -4,7 +4,7 @@ from typing import Optional
 from fire import Fire
 import sseclient
 
-from endpoint_utils import rest_api_request, get_response, iterate_streaming_response
+from llm_utils.endpoint_utils import rest_api_request, get_response, iterate_streaming_response
 
 
 
