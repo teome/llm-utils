@@ -11,9 +11,10 @@ DEFAULT_MODEL = "gpt-4"
 MODEL_LIST = [
     "gpt-3", "gpt-3.5-turbo",
     "gpt-4", "gpt-4-1106-preview", "gpt-4-0613", "gpt-4-0314",
-    "mistralai/Mistral-7B-Instruct-v0.2", "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    "mistralai/Mistral-7B-Instruct-v0.2", "mistralai/Mixtral-8x7B-v0.1",
     "togethercomputer/llama-2-70b-chat",
     "zero-one-ai/Yi-34B-Chat",
+    "NousResearch/Nous-Hermes-2-Yi-34B",
 ]
 
 SYSTEM_PROMPT = """\
