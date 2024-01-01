@@ -67,6 +67,7 @@ def chat_completions_create(
     model: str = DEFAULT_MODEL,
     max_tokens: int = 150,
     temperature: float = 0.8,
+    top_p: float = 1.0,
     stream: bool = True,
     **kwargs):
     """Create chat completions"""
@@ -78,6 +79,7 @@ def chat_completions_create(
             model=model,
             max_tokens=max_tokens,
             temperature=temperature,
+            top_p=top_p,
             stream=stream,
             **kwargs
         )
@@ -93,6 +95,7 @@ def predict(
     max_tokens=1024,
     temperature=0.8,
     frequency_penalty=0.0,
+    top_p=1.0,
     client=None,
 ):
     history_openai_format = prepare_openai_chat_history(message, history, system_prompt)
@@ -104,6 +107,7 @@ def predict(
         max_tokens=max_tokens,
         temperature=temperature,
         frequency_penalty=frequency_penalty,
+        top_p=top_p,
         stream=True,
     )
     partial_message = ""
@@ -121,12 +125,13 @@ def predict_inference(
     max_tokens=1024,
     temperature=0.8,
     frequency_penalty=0.0,
+    top_p=1.0,  # Added top_p argument
     tokenizer=None,
     base_url=None,
     api_key=None,
     timeout=60,
     stream=True,
-    ):
+):
     """Predict using inference style endpoint via HTTP request"""
 
     # have to have them after other options due to the way gradio works to provide args not kwargs
@@ -156,6 +161,7 @@ def predict_inference(
             "temperature": temperature,
             "max_tokens": max_tokens,
             "repetition_penalty": repetition_penalty,
+            "top_p": top_p,
             "stream_tokens": stream,
         }
     else:
@@ -221,12 +227,12 @@ def main(model=DEFAULT_MODEL, max_retries=2, timeout=60, base_url=None, api_key=
         max_tokens = gr.Number(value=1024, label="Max Tokens")
         temperature = gr.Slider(minimum=0.0, maximum=1.0, step=0.1, value=0.8, label="Temperature")
         frequency_penalty = gr.Slider(minimum=0.0, maximum=2.0, step=0.1, value=0.0, label="Frequency Penalty (repetition for together)")
-        # TODO: add top_p
+        top_p = gr.Slider(minimum=0.1, maximum=1.0, step=0.1, value=1.0, label="Top-P")
 
         gr.ChatInterface(
             predict_fn,
             additional_inputs=[
-                model, system_prompt, max_tokens, temperature, frequency_penalty,],
+                model, system_prompt, max_tokens, temperature, frequency_penalty,top_p],
         )
 
     demo.queue().launch()

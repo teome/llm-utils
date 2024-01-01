@@ -54,6 +54,7 @@ def openai_chat_completions_create(
     base_url=None,
     max_tokens=1024,
     temperature=0.8,
+    top_p=1.0,
     return_response=False,
     timeout=None,
     max_retries=3,
@@ -100,6 +101,7 @@ def openai_chat_completions_create(
             messages=messages,
             max_tokens=max_tokens,
             temperature=temperature,
+            top_p=top_p,
             timeout=timeout,
             **kwargs
         )
@@ -119,6 +121,7 @@ def prepare_http_request_json(
     model="gpt-3.5-turbo",
     max_tokens=1024,
     temperature=0.8,
+    top_p=1.0,
     **kwargs):
     """Create json dict for requests call"""
     json_data = {
@@ -126,6 +129,7 @@ def prepare_http_request_json(
         "messages": messages,
         "max_tokens": max_tokens,
         "temperature": temperature,
+        "top_p": top_p,
         **kwargs,
     }
     return json_data
