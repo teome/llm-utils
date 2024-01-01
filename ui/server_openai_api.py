@@ -203,7 +203,6 @@ def main(model=DEFAULT_MODEL, max_retries=2, timeout=60, base_url=None, api_key=
 
     # setup either the client for openai compatible api or the predict function for inference style api
     if base_url is None or "chat" in base_url:
-        global client  # pylint: disable=global-statement
         client = openai.OpenAI(api_key=api_key, base_url=base_url, max_retries=max_retries, timeout=timeout)
         predict_fn = partial(predict, client=client)
     else:
