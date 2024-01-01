@@ -21,20 +21,20 @@ MODEL_LIST = [
     "NousResearch/Nous-Hermes-2-Yi-34B",
 ]
 
+MODELS_WITHOUT_SYSTEM_ROLE = [
+    "mistral", # TODO: there are others, but for now only care about this one
+]
+
 SYSTEM_PROMPT = """\
 You are a helpful, inciteful, accurate and up to date pair programmer. \
 When beginning a response, you outline each step and the reasoning behind it, for the problem or task to be solved. Having done this, you should propose a solution. \
-The solution can be in the form of code, which should be in codeblocks, or in the form of a plan or system description as appropriate.
+The solution can be in the form of code, which should be in codeblocks, or in the form of a plan or system description as appropriate.\
 """
 
 
 def _check_merge_system_prompt(model: str) -> bool:
     """Check if model is one that requires system prompt to be merged with history"""
-    models_without_system_role = [
-        "mistral", # TODO: there are others, but for now only care about this one
-    ]
-
-    for model_name in models_without_system_role:
+    for model_name in MODELS_WITHOUT_SYSTEM_ROLE:
         if model_name in model:
             return True
     return False
@@ -212,12 +212,12 @@ def main(model=DEFAULT_MODEL, max_retries=2, timeout=60, base_url=None, api_key=
         predict_fn = partial(predict_inference, tokenizer=tokenizer, base_url=base_url, api_key=api_key)
 
 
-    with gr.Blocks() as demo:
+    with gr.Blocks(theme=gr.themes.Monochrome()) as demo:
         model  = gr.Dropdown(MODEL_LIST,
             value=model,
             allow_custom_value=True,
             label="Model")
-        system_prompt = gr.Textbox(SYSTEM_PROMPT, label="System Prompt")
+        system_prompt = gr.Textbox(SYSTEM_PROMPT, label="System Prompt", interactive=True)
         max_tokens = gr.Number(value=1024, label="Max Tokens")
         temperature = gr.Slider(minimum=0.0, maximum=1.0, step=0.1, value=0.8, label="Temperature")
         frequency_penalty = gr.Slider(minimum=0.0, maximum=2.0, step=0.1, value=0.0, label="Frequency Penalty (repetition for together)")
