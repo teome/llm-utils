@@ -98,7 +98,12 @@ def predict(
     top_p=1.0,
     client=None,
 ):
-    history_openai_format = prepare_openai_chat_history(message, history, system_prompt)
+    history_openai_format = prepare_openai_chat_history(
+        message,
+        history,
+        system_prompt,
+        merge_system_prompt=_check_merge_system_prompt(model)
+    )
 
     response = chat_completions_create(
         messages=history_openai_format,
@@ -184,7 +189,7 @@ def predict_inference(
             yield partial_message
 
 
-def main(model=DEFAULT_MODEL, max_retries=2, timeout=60, base_url=None, api_key=None):
+def main(model=DEFAULT_MODEL, max_retries=2, timeout=60, base_url=None, api_key=None, mode="openai"):
 
     if api_key is None:
         api_key_env = None
@@ -192,12 +197,12 @@ def main(model=DEFAULT_MODEL, max_retries=2, timeout=60, base_url=None, api_key=
             api_key_env = "OPENAI_API_KEY"
         elif "together" in base_url:
             api_key_env = "TOGETHER_API_KEY"
-        elif "vllm" in base_url or "localhost" in base_url:
-            api_key_env = "EMPTY"
+        # elif "vllm" in base_url or "localhost" in base_url:
+        #     api_key_env = ""
 
         if api_key_env is None:
             warn('No known api key environment variable found for base_url, using empty string')
-            api_key = ""
+            api_key = "EMPTY"
         else:
             try:
                 api_key = os.environ[api_key_env]
@@ -208,7 +213,7 @@ def main(model=DEFAULT_MODEL, max_retries=2, timeout=60, base_url=None, api_key=
 
 
     # setup either the client for openai compatible api or the predict function for inference style api
-    if base_url is None or "chat" in base_url:
+    if base_url is None or "chat" in base_url or mode == "openai":
         client = openai.OpenAI(api_key=api_key, base_url=base_url, max_retries=max_retries, timeout=timeout)
         predict_fn = partial(predict, client=client)
     else:
