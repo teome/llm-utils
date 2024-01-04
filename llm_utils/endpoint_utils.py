@@ -207,3 +207,37 @@ def get_response(response: requests.Response):
 
     # Handle the response not being OK
     raise requests.exceptions.HTTPError(f"Request failed with status code {response.status_code}")
+
+
+# Handling of Server Sent Events (SSE) -- alternatively use sseclient-py (not sseclient)
+def _process_sse_event(buffer):
+    event_data = {}
+    for line in buffer.strip().split('\n'):
+        key, value = line.split(':', 1)
+        event_data[key.strip()] = value.strip()
+
+    return event_data
+
+def stream_sse(response: requests.Response):
+    # Make sure the connection is valid
+    if response.status_code == 200:
+        buffer = ''
+        for line in response.iter_lines():
+            if line:
+                buffer += line.decode('utf-8') + '\n'
+            else:
+                yield _process_sse_event(buffer)
+                buffer = ''
+    else:
+        print(f"Connection failed with status code: {response.status_code}")
+
+
+
+def print_stream_sse(response: requests.Response):
+    for chunk in stream_sse(response):
+        # Assumes either together.ai or openai (vLLM might work too...)
+        if not chunk['data'] or chunk['data'] == '[DONE]':
+            print("")
+            break
+        data = json.loads(chunk['data'])
+        print(data['choices'][0]['text'], end='', flush=True)
