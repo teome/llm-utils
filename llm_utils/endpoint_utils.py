@@ -234,7 +234,7 @@ def stream_sse(response: requests.Response):
 
 def print_stream_sse(response: requests.Response):
     for chunk in stream_sse(response):
-        # Assumes either together.ai or openai (vLLM might work too...)
+        # Assumes either together.ai (vLLM might work too...)
         if not chunk['data'] or chunk['data'] == '[DONE]':
             print("")
             break
