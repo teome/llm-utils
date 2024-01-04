@@ -232,7 +232,6 @@ def stream_sse(response: requests.Response):
         print(f"Connection failed with status code: {response.status_code}")
 
 
-
 def print_stream_sse(response: requests.Response):
     for chunk in stream_sse(response):
         # Assumes either together.ai or openai (vLLM might work too...)
