@@ -1,7 +1,8 @@
 version: '3'
 services:
-  CONTAINER:
+  aidev:
     image: dak00/aidev:pytorch2.1.2-cu12.1-devel
+    container_name: aidev
     ipc: host
     command: tail -f /dev/null
     ports:
