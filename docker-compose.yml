@@ -3,6 +3,9 @@ services:
   CONTAINER:
     image: dak00/aidev:pytorch2.1.2-cu12.1-devel
     ipc: host
+    command: tail -f /dev/null
+    ports:
+      - 8888:8888
     volumes:
       - ${HOME}/.cache/huggingface:/home/dom/.cache/huggingface
       - .:/home/dom/workspace
