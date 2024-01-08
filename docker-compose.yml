@@ -1,0 +1,15 @@
+version: '3'
+services:
+  CONTAINER:
+    image: dak00/aidev:pytorch2.1.2-cu12.1-devel
+    ipc: host
+    volumes:
+      - ${HOME}/.cache/huggingface:/home/dom/.cache/huggingface
+      - .:/home/dom/workdir
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]
