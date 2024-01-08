@@ -5,7 +5,7 @@ services:
     ipc: host
     volumes:
       - ${HOME}/.cache/huggingface:/home/dom/.cache/huggingface
-      - .:/home/dom/workdir
+      - .:/home/dom/workspace
     deploy:
       resources:
         reservations:
