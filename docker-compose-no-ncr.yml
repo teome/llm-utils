@@ -1,0 +1,18 @@
+version: '3'
+services:
+  aidev:
+    image: dak00/aidev:pytorch2.1.2-cu12.1-devel
+    container_name: aidev
+    ipc: host
+    command: tail -f /dev/null
+    ports:
+      - 8888:8888
+    volumes:
+      - ${HOME}/.cache/huggingface:/home/dom/.cache/huggingface
+      - .:/home/dom/workspace
+      - /var/lib/nvidia/lib64:/usr/local/nvidia/lib64
+      - /var/lib/nvidia/bin:/usr/local/nvidia/bin
+    devices:
+      - /dev/nvidia0:/dev/nvidia0
+      - /dev/nvidia-uvm:/dev/nvidia-uvm
+      - /dev/nvidiactl:/dev/nvidiactl
