@@ -1,0 +1,11 @@
+fire==0.5.0
+gradio==4.15.0
+openai==1.9.0
+pydantic==2.5.3
+pytest==7.4.4
+python-dotenv==1.0.1
+Requests==2.31.0
+sentencepiece==0.1.99
+sseclient==0.0.27
+torch==2.1.2
+transformers==4.37.1
