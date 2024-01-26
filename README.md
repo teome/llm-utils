@@ -1,6 +1,6 @@
 # LLM-Utils
 
-Utility library, scripts and a barebones gradio UI for chatting to various LLM endpoints.
+Utility library, scripts, tokenization implementation and comparisons, and a barebones gradio UI for chatting to various LLM endpoints.
 
 Includes
 - Tokenization that's more correct than that provided by the majority of OSS libraries
