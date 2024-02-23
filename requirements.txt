@@ -1,5 +1,5 @@
 fire==0.5.0
-gradio==4.15.0
+gradio==4.19.2
 openai==1.9.0
 pydantic==2.5.3
 pytest==7.4.4
